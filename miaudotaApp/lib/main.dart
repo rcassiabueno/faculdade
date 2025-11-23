@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'forgot_password_page.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
+// Modelo de dados da solicitação de adoção
 class SolicitacaoAdocao {
   final PetParaAdocao pet;
   final String nomeInteressado;
@@ -19,6 +22,7 @@ class SolicitacaoAdocao {
   });
 }
 
+// Modelo de dados do perfil do usuário
 class UserProfile {
   String nome;
   String cpf;
@@ -123,6 +127,7 @@ class PetParaAdocao {
   String get cidadeEstado => '$cidade – $estado';
 }
 
+// Estado global do aplicativo (dados simulados)
 class AppState {
   static UserProfile userProfile = UserProfile(
     nome: 'Maria Silva',
@@ -176,6 +181,7 @@ Future<void> abrirWhatsApp(
   }
 }
 
+// APLICATIVO PRINCIPAL
 class MiaudotaApp extends StatelessWidget {
   const MiaudotaApp({super.key});
 
@@ -214,15 +220,22 @@ class MiaudotaApp extends StatelessWidget {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.transparent),
+            borderSide: const BorderSide(
+              color: Color(0xFFCCCCCC), // cinza quando não focado
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.transparent),
+            borderSide: const BorderSide(
+              color: Color(0xFFCCCCCC), // cinza quando não focado
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: primaryOrange, width: 1.5),
+            borderSide: const BorderSide(
+              color: primaryOrange,
+              width: 1.5,
+            ), // laranja quando focado
           ),
         ),
       ),
@@ -231,6 +244,7 @@ class MiaudotaApp extends StatelessWidget {
   }
 }
 
+// PÁGINA DE SPLASH
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -271,6 +285,7 @@ class _SplashPageState extends State<SplashPage> {
   }
 }
 
+// PÁGINA DE LOGIN
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -471,6 +486,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+// PÁGINA DE CADASTRO
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -734,6 +750,7 @@ class _SignupPageState extends State<SignupPage> {
   }
 }
 
+// PÁGINA PRINCIPAL (HOME)
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -771,7 +788,7 @@ class _HomePageState extends State<HomePage> {
       // texto quando focado
       floatingLabelStyle: const TextStyle(
         color: primaryOrange,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
 
@@ -1051,6 +1068,20 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  Widget _buildPetImage(PetParaAdocao pet) {
+    final path = pet.imagemPath;
+
+    // Se for caminho de arquivo (galeria / armazenamento do celular)
+    final bool isFile = path.startsWith('/') || path.contains('storage');
+
+    if (isFile) {
+      return Image.file(File(path), fit: BoxFit.cover, height: 450);
+    }
+
+    // Caso contrário, assume que é asset
+    return Image.asset(path, fit: BoxFit.cover, height: 450);
+  }
+
   @override
   Widget build(BuildContext context) {
     final pet = _petsFiltrados.isNotEmpty ? _petsFiltrados[_petIndex] : null;
@@ -1088,7 +1119,7 @@ class _HomePageState extends State<HomePage> {
                     label: const Text(
                       'Filtros',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: primaryOrange,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1132,11 +1163,7 @@ class _HomePageState extends State<HomePage> {
                                     topLeft: Radius.circular(24),
                                     topRight: Radius.circular(24),
                                   ),
-                                  child: Image.asset(
-                                    pet!.imagemPath,
-                                    fit: BoxFit.cover,
-                                    height: 450,
-                                  ),
+                                  child: _buildPetImage(pet!),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -1163,7 +1190,7 @@ class _HomePageState extends State<HomePage> {
                                             '${pet.cidade} – ${pet.estado}',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w600,
-                                              fontSize: 13,
+                                              fontSize: 12,
                                               color: Color(0xFF1D274A),
                                             ),
                                           ),
@@ -1338,6 +1365,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+//PÁGINA DE ADOÇÃO
 class AdoptionPage extends StatefulWidget {
   final PetParaAdocao pet;
 
@@ -1360,6 +1388,20 @@ class _AdoptionPageState extends State<AdoptionPage> {
     );
 
     _index = i == -1 ? 0 : i;
+  }
+
+  Widget _buildPetImage(PetParaAdocao pet) {
+    final path = pet.imagemPath;
+
+    // Se for caminho de arquivo (galeria / armazenamento do celular)
+    final bool isFile = path.startsWith('/') || path.contains('storage');
+
+    if (isFile) {
+      return Image.file(File(path), fit: BoxFit.cover, height: 450);
+    }
+
+    // Caso contrário, assume que é asset
+    return Image.asset(path, fit: BoxFit.cover, height: 450);
   }
 
   @override
@@ -1417,11 +1459,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                           topLeft: Radius.circular(24),
                           topRight: Radius.circular(24),
                         ),
-                        child: Image.asset(
-                          pet.imagemPath,
-                          fit: BoxFit.cover,
-                          height: 350,
-                        ),
+                        child: _buildPetImage(pet!),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -1447,7 +1485,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                                   pet.cidadeEstado,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     color: Color(0xFF1D274A),
                                   ),
                                 ),
@@ -1467,7 +1505,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                                   ? 'Este pet está esperando um lar cheio de carinho. 💛'
                                   : pet.descricao,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 height: 1.4,
                                 color: Color(0xFF1D274A),
                               ),
@@ -1478,7 +1516,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                               'Cidade / Estado',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: Color(0xFF1D274A),
                               ),
                             ),
@@ -1486,7 +1524,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                             Text(
                               pet.cidadeEstado,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: Color(0xFF555555),
                               ),
                             ),
@@ -1496,7 +1534,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                               'Contato',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: Color(0xFF1D274A),
                               ),
                             ),
@@ -1509,31 +1547,63 @@ class _AdoptionPageState extends State<AdoptionPage> {
                                       ? '(00) 00000-0000'
                                       : pet.telefoneDono,
                                   style: const TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     color: Color(0xFF555555),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                GestureDetector(
-                                  onTap: () {
-                                    final numero = pet.telefoneDono.isEmpty
-                                        ? '550000000000'
-                                        : pet.telefoneDono.replaceAll(
-                                            RegExp(r'\D'),
-                                            '',
+                                // telefone + WhatsApp
+                                Row(
+                                  children: [
+                                    Text(
+                                      pet.telefoneDono.isEmpty
+                                          ? '(00) 00000-0000'
+                                          : pet.telefoneDono,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF555555),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    GestureDetector(
+                                      onTap: () {
+                                        // remove tudo que não for número
+                                        String numero = pet.telefoneDono
+                                            .replaceAll(RegExp(r'\D'), '');
+
+                                        // se não tiver número, avisa ao usuário e sai
+                                        if (numero.isEmpty) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Contato indisponível. Esse pet ainda não tem número para contato 🐾',
+                                              ),
+                                            ),
                                           );
-                                    abrirWhatsApp(
-                                      context,
-                                      numeroComDDD: numero,
-                                      mensagem:
-                                          'Olá! Tenho interesse em adotar ${pet.nome} 🐾',
-                                    );
-                                  },
-                                  child: const FaIcon(
-                                    FontAwesomeIcons.whatsapp,
-                                    size: 18,
-                                    color: Colors.green,
-                                  ),
+                                          return;
+                                        }
+
+                                        // adiciona 55 se ainda não tiver
+                                        if (!numero.startsWith('55')) {
+                                          numero = '55$numero';
+                                        }
+
+                                        abrirWhatsApp(
+                                          context,
+                                          numeroComDDD: numero,
+                                          mensagem:
+                                              'Olá! Tenho interesse em adotar ${pet.nome} 🐾',
+                                        );
+                                      },
+                                      child: const FaIcon(
+                                        FontAwesomeIcons.whatsapp,
+                                        size: 18,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -1792,7 +1862,7 @@ class TipsPage extends StatelessWidget {
                       child: Text(
                         'Conheça as melhores práticas para ser um responsável amoroso e cuidadoso.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: Color(0xFF555555),
                           height: 1.4,
                         ),
@@ -1966,6 +2036,7 @@ class _TipCard extends StatelessWidget {
   }
 }
 
+// TELA DE CUIDADO E AFETO
 class CareAndAffectionPage extends StatelessWidget {
   const CareAndAffectionPage({super.key});
 
@@ -1977,13 +2048,13 @@ class CareAndAffectionPage extends StatelessWidget {
         children: [
           const Text(
             '• ',
-            style: TextStyle(fontSize: 13, color: Color(0xFF1D274A)),
+            style: TextStyle(fontSize: 12, color: Color(0xFF1D274A)),
           ),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: Color(0xFF1D274A),
                 height: 1.4,
               ),
@@ -2048,7 +2119,7 @@ class CareAndAffectionPage extends StatelessWidget {
                     const Text(
                       'A chegada de um novo amigo é um momento de pura alegria! O afeto é o alicerce para uma relação de confiança e lealdade. Aqui estão as melhores práticas para garantir que seu pet se sinta amado, seguro e parte da família desde o primeiro dia.',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         height: 1.5,
                         color: Color(0xFF1D274A),
                       ),
@@ -2066,7 +2137,7 @@ class CareAndAffectionPage extends StatelessWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'Lembre-se que seu pet passou por uma grande mudança. Ele pode estar tímido, assustado ou ansioso. A paciência é sua maior aliada.',
-                      style: TextStyle(fontSize: 13, height: 1.5),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                     const SizedBox(height: 8),
                     _bullet(
@@ -2091,7 +2162,7 @@ class CareAndAffectionPage extends StatelessWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'Animais prosperam com rotinas. Saber o que esperar a cada dia diminui a ansiedade e acelera a adaptação.',
-                      style: TextStyle(fontSize: 13, height: 1.5),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                     const SizedBox(height: 8),
                     _bullet(
@@ -2116,7 +2187,7 @@ class CareAndAffectionPage extends StatelessWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'Seu pet não fala sua língua, mas se comunica o tempo todo através da linguagem corporal. Aprender a "ouvi-lo" é uma forma profunda de cuidado.',
-                      style: TextStyle(fontSize: 13, height: 1.5),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                     const SizedBox(height: 8),
                     _bullet(
@@ -2141,6 +2212,7 @@ class CareAndAffectionPage extends StatelessWidget {
   }
 }
 
+// TELA DE LAR SEGURO
 class SafeHomePage extends StatelessWidget {
   const SafeHomePage({super.key});
 
@@ -2152,13 +2224,13 @@ class SafeHomePage extends StatelessWidget {
         children: [
           const Text(
             '• ',
-            style: TextStyle(fontSize: 13, color: Color(0xFF1D274A)),
+            style: TextStyle(fontSize: 12, color: Color(0xFF1D274A)),
           ),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: Color(0xFF1D274A),
                 height: 1.4,
               ),
@@ -2221,7 +2293,7 @@ class SafeHomePage extends StatelessWidget {
                     const SizedBox(height: 8),
                     const Text(
                       'Sua casa é o universo do seu novo companheiro. Prepará-la é um ato de amor e responsabilidade para prevenir acidentes e garantir conforto.',
-                      style: TextStyle(fontSize: 13, height: 1.5),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                     const SizedBox(height: 16),
 
@@ -2284,6 +2356,7 @@ class SafeHomePage extends StatelessWidget {
   }
 }
 
+// TELA DE ALIMENTAÇÃO ADEQUADA
 class ProperFeedingPage extends StatelessWidget {
   const ProperFeedingPage({super.key});
 
@@ -2295,13 +2368,13 @@ class ProperFeedingPage extends StatelessWidget {
         children: [
           const Text(
             '• ',
-            style: TextStyle(fontSize: 13, color: Color(0xFF1D274A)),
+            style: TextStyle(fontSize: 12, color: Color(0xFF1D274A)),
           ),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: Color(0xFF1D274A),
                 height: 1.4,
               ),
@@ -2364,7 +2437,7 @@ class ProperFeedingPage extends StatelessWidget {
                     const SizedBox(height: 8),
                     const Text(
                       'A dieta do seu pet é o combustível para uma vida longa, ativa e feliz. Oferecer a nutrição correta fortalece a imunidade e mantém o peso ideal.',
-                      style: TextStyle(fontSize: 13, height: 1.5),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                     const SizedBox(height: 16),
 
@@ -2491,6 +2564,7 @@ Widget _tipsBottomNav(BuildContext context) {
   );
 }
 
+// TELA DE PERFIL
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -2882,7 +2956,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const Text(
                         'Você ainda não adotou nenhum pet.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: Color(0xFF777777),
                         ),
                       )
@@ -2994,7 +3068,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const Text(
                         'Você ainda não adicionou nenhum pet para adoção.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: Color(0xFF777777),
                         ),
                       )
@@ -3209,9 +3283,14 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
+                  backgroundColor: Color(0xFF1D274A),
                   content: Text(
                     'Nenhum pet disponível para adoção no momento.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               );
@@ -3237,6 +3316,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
+// TELA DE EDIÇÃO DE PERFIL
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
@@ -3301,7 +3381,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         borderSide: const BorderSide(color: primaryOrange, width: 1.4),
       ),
       labelStyle: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 14),
-      floatingLabelStyle: const TextStyle(color: primaryOrange, fontSize: 13),
+      floatingLabelStyle: const TextStyle(color: primaryOrange, fontSize: 12),
     );
   }
 
@@ -3615,6 +3695,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 }
 
+// TELA DE CADASTRO/EDIÇÃO DE PET PARA ADOÇÃO
 class PetPage extends StatefulWidget {
   final PetParaAdocao? pet; // null = novo pet, não null = editar
 
@@ -3634,6 +3715,9 @@ class _PetPageState extends State<PetPage> {
   late TextEditingController _cidadeEstadoController;
   late TextEditingController _descricaoController;
   late TextEditingController _imagemController;
+
+  final ImagePicker _picker = ImagePicker();
+  XFile? _imagemSelecionada; // foto escolhida pelo usuário
 
   @override
   void initState() {
@@ -3704,7 +3788,7 @@ class _PetPageState extends State<PetPage> {
         borderSide: const BorderSide(color: primaryOrange, width: 1.4),
       ),
       labelStyle: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 14),
-      floatingLabelStyle: const TextStyle(color: primaryOrange, fontSize: 13),
+      floatingLabelStyle: const TextStyle(color: primaryOrange, fontSize: 12),
     );
   }
 
@@ -3737,7 +3821,10 @@ class _PetPageState extends State<PetPage> {
       descricao: _descricaoController.text.trim(),
       cidade: perfil.cidade,
       estado: perfil.estado,
-      imagemPath: _imagemController.text.trim(),
+      imagemPath:
+          _imagemSelecionada != null && _imagemSelecionada!.path.isNotEmpty
+          ? _imagemSelecionada!.path
+          : _imagemController.text.trim(),
       telefoneDono: perfil.telefone,
     );
 
@@ -3799,15 +3886,21 @@ class _PetPageState extends State<PetPage> {
                         const SizedBox(height: 16),
 
                         GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Seleção de foto pode ser implementada depois '
-                                  'com o plugin image_picker. No momento use um caminho de asset.',
-                                ),
-                              ),
+                          onTap: () async {
+                            final picked = await _picker.pickImage(
+                              source: ImageSource.gallery,
+                              maxWidth: 1024,
+                              maxHeight: 1024,
+                              imageQuality: 85,
                             );
+
+                            if (picked != null) {
+                              setState(() {
+                                _imagemSelecionada = picked;
+                                _imagemController.text =
+                                    picked.path; // salva caminho no controller
+                              });
+                            }
                           },
                           child: Container(
                             height: 160,
@@ -3818,24 +3911,33 @@ class _PetPageState extends State<PetPage> {
                                 color: const Color(0xFFE0E0E0),
                               ),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(
-                                  Icons.photo_camera_outlined,
-                                  size: 32,
-                                  color: Color(0xFFB3B3B3),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Adicionar foto (placeholder)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF9E9E9E),
+                            child: _imagemSelecionada == null
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.photo_camera_outlined,
+                                        size: 32,
+                                        color: Color(0xFFB3B3B3),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Adicionar foto',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF9E9E9E),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.file(
+                                      File(_imagemSelecionada!.path),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -3992,6 +4094,7 @@ class _PetPageState extends State<PetPage> {
   }
 }
 
+// TELA DOS TERMOS
 class TermsPage extends StatelessWidget {
   const TermsPage({super.key});
 
