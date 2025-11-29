@@ -1,3 +1,10 @@
+# MiaudotaApp — local dev notes
+
+- The Forgot Password screen supports two flows:
+  - Send reset link by e-mail (production-ready) — requires SMTP settings in `MiaudotaAPI/.env`
+  - Local reset (email + CPF + new password) — **development** convenience only
+
+- To re-enable e-mail sending, ensure SMTP credentials are valid and `MiaudotaAPI` can authenticate with the provider.
 # Miaudota! – Aplicativo para Adoção de Pets
 
 O **Miaudota!** é um aplicativo mobile desenvolvido com Flutter para facilitar a conexão entre pessoas interessadas em adotar animais e responsáveis que desejam encontrar um novo lar para seus pets.
