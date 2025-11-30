@@ -15,7 +15,7 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () async {
+    Future.delayed(const Duration(seconds: 1), () async {
       final usuario = await AuthService.getUsuarioLogado();
 
       if (!mounted) return;

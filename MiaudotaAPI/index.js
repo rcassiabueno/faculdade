@@ -5,12 +5,12 @@ import dotenv from "dotenv";
 
 import usersRoutes from "./src/routes/users.routes.js";
 import petsRoutes from "./src/routes/pets.routes.js";
-import { transporter } from "./src/services/email.service.js";
+// import { transporter } from "./src/services/email.service.js";  // ❌ desativado enquanto email não usado
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,12 +22,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// 🔹 disponibiliza imagens no navegador
+// disponibiliza imagens no navegador
 app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
 
-// 🔹 rotas
+// rotas
 app.use("/users", usersRoutes);
 app.use("/pets", petsRoutes);
+
+// rota de teste (para abrir no navegador)
+app.get("/", (req, res) => {
+  res.send("API Miaudota OK!");
+});
 
 // fallback 404
 app.use((req, res) => {
@@ -36,11 +41,12 @@ app.use((req, res) => {
 
 // iniciar servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
 
-// Verify the SMTP transporter connection during startup
+/* 
+// Bloqueado temporariamente: SMTP não será usado
 transporter.verify()
-  .then(() => console.log('📧 SMTP transporter verified and ready.'))
-  .catch((err) => console.error('❌ SMTP transporter verification failed:', err));
-
+  .then(() => console.log('SMTP transporter verified and ready.'))
+  .catch((err) => console.error('SMTP transporter verification failed:', err));
+*/

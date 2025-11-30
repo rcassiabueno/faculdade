@@ -23,7 +23,6 @@ class _AdoptionPageState extends State<AdoptionPage> {
   void initState() {
     super.initState();
 
-    // Descobre em qual posição da lista está o pet recebido
     final i = AppState.petsParaAdocao.indexWhere(
       (p) => p.nome == widget.pet.nome,
     );
@@ -143,7 +142,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
 
                           const SizedBox(height: 8),
 
-                          // Exemplo de descrição (ajuste conforme os campos que você tiver no modelo)
+                          // Exemplo de descrição
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
@@ -215,7 +214,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
         ),
       ),
 
-      bottomNavigationBar: const MiaudotaBottomNav(currentIndex: 0),
+      bottomNavigationBar: const MiaudotaBottomNav(currentIndex: 1),
     );
   }
 }

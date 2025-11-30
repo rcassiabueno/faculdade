@@ -1,3 +1,5 @@
+// Script para testar o envio de email usando o serviço de email configurado. (Função desativada no momento)
+
 import dotenv from 'dotenv';
 dotenv.config();
 import { transporter } from '../src/services/email.service.js';

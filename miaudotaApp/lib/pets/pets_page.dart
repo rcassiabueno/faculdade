@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:miaudota_app/services/pet_service.dart';
 
 class PetsPage extends StatefulWidget {
-  const PetsPage({super.key});
+  final Future<List<dynamic>> Function()? loadPets;
+
+  const PetsPage({super.key, this.loadPets});
 
   @override
   State<PetsPage> createState() => _PetsPageState();
@@ -14,7 +16,7 @@ class _PetsPageState extends State<PetsPage> {
   @override
   void initState() {
     super.initState();
-    petsFuture = PetService.getPets(); // Chama a API quando a tela abre
+    petsFuture = (widget.loadPets ?? PetService.getPets)();
   }
 
   @override
@@ -24,12 +26,10 @@ class _PetsPageState extends State<PetsPage> {
       body: FutureBuilder<List<dynamic>>(
         future: petsFuture,
         builder: (context, snapshot) {
-          // Carregando
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Erro real (API caiu, sem internet etc.)
           if (snapshot.hasError) {
             return const Center(
               child: Text(
@@ -39,7 +39,6 @@ class _PetsPageState extends State<PetsPage> {
             );
           }
 
-          // Nenhum dado retornado (por segurança)
           if (!snapshot.hasData) {
             return const Center(
               child: Text(
@@ -51,7 +50,6 @@ class _PetsPageState extends State<PetsPage> {
 
           final pets = snapshot.data!;
 
-          // ✅ Lista vazia → mensagem amigável, não erro
           if (pets.isEmpty) {
             return const Center(
               child: Text(
@@ -61,12 +59,10 @@ class _PetsPageState extends State<PetsPage> {
             );
           }
 
-          // Lista com pets → mostra normalmente
           return ListView.builder(
             itemCount: pets.length,
             itemBuilder: (context, index) {
               final pet = pets[index];
-
               final foto = (pet['foto'] ?? '').toString();
 
               return ListTile(

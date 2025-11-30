@@ -23,25 +23,30 @@ class TestNavigatorObserver extends NavigatorObserver {
 }
 
 void main() {
-  testWidgets('LoginPage - success navigates to HomePage',
-      (WidgetTester tester) async {
+  testWidgets('LoginPage - success navigates to HomePage', (
+    WidgetTester tester,
+  ) async {
     final observer = TestNavigatorObserver();
     bool called = false;
 
-    await tester.pumpWidget(MaterialApp(
-      home: LoginPage(
-        loginAction: (email, senha) async {
-          await Future.delayed(const Duration(milliseconds: 10));
-          called = true;
-        },
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginPage(
+          loginAction: (email, senha) async {
+            await Future.delayed(const Duration(milliseconds: 10));
+            called = true;
+          },
+        ),
+        navigatorObservers: [observer],
       ),
-      navigatorObservers: [observer],
-    ));
+    );
 
     await tester.pumpAndSettle();
 
-    // Fill email and password
-    await tester.enterText(find.byType(TextFormField).at(0), 'user@example.com');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'user@example.com',
+    );
     await tester.enterText(find.byType(TextFormField).at(1), 'senha123');
 
     await tester.tap(find.widgetWithText(ElevatedButton, 'Entrar'));
@@ -49,27 +54,33 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 200));
     expect(called, isTrue);
-    // ensure navigation was attempted
+
     expect(observer.pushed, isTrue);
   });
 
-  testWidgets('LoginPage - error shows snackbar and stays on page',
-      (WidgetTester tester) async {
+  testWidgets('LoginPage - error shows snackbar and stays on page', (
+    WidgetTester tester,
+  ) async {
     final observer = TestNavigatorObserver();
 
-    await tester.pumpWidget(MaterialApp(
-      home: LoginPage(
-        loginAction: (email, senha) async {
-          await Future.delayed(const Duration(milliseconds: 10));
-          throw Exception('Usuário ou senha inválidos');
-        },
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginPage(
+          loginAction: (email, senha) async {
+            await Future.delayed(const Duration(milliseconds: 10));
+            throw Exception('Usuário ou senha inválidos');
+          },
+        ),
+        navigatorObservers: [observer],
       ),
-      navigatorObservers: [observer],
-    ));
+    );
 
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'user@example.com');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'user@example.com',
+    );
     await tester.enterText(find.byType(TextFormField).at(1), 'senhaErrada');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Entrar'));
     await tester.pump();

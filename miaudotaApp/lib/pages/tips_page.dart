@@ -3,6 +3,7 @@ import 'care_and_affection_page.dart';
 import 'safe_home_page.dart';
 import 'proper_feeding_page.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
+import 'package:miaudota_app/components/miaudota_top_bar.dart';
 import 'package:miaudota_app/theme/colors.dart';
 
 //DICAS DE ADOÇÃO
@@ -16,24 +17,9 @@ class TipsPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Barra superior
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: const Color(0xFFFFE0B5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset('assets/images/logo.png', height: 64),
-                  const Text(
-                    'Dicas de Adoção',
-                    style: TextStyle(
-                      fontFamily: 'PoetsenOne',
-                      fontSize: 18,
-                      color: Color(0xFF1D274A),
-                    ),
-                  ),
-                ],
-              ),
+            const MiaudotaTopBar(
+              titulo: 'Dicas de Adoção',
+              showBackButton: false,
             ),
 
             Expanded(

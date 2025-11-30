@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:miaudota_app/login_page.dart'; // caminho correto
+import 'package:miaudota_app/components/miaudota_top_bar.dart';
 import 'package:miaudota_app/theme/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,45 +13,10 @@ class TermsPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Barra Superior
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: const Color(0xFFFFE0B5),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Image.asset('assets/images/logo.png', height: 64),
-                  ),
-
-                  const Text(
-                    'Termo de uso e\nPolítica de privacidade',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'PoetsenOne',
-                      fontSize: 18,
-                      color: Color(0xFF1D274A),
-                    ),
-                  ),
-
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Color(0xFF1D274A),
-                      ),
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+            const MiaudotaTopBar(
+              titulo: 'Termo de uso e\nPolítica de privacidade',
+              showBackButton: true,
+              maxLines: 2,
             ),
             // Conteúdo
             Expanded(
@@ -231,7 +196,6 @@ class TermsPage extends StatelessWidget {
                             );
 
                             if (await launchUrl(uri)) {
-                              // OK abriu
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -379,7 +343,6 @@ class TermsPage extends StatelessWidget {
                             );
 
                             if (await launchUrl(uri)) {
-                              // OK abriu
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

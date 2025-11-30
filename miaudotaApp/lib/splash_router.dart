@@ -19,19 +19,16 @@ class SplashRouter extends StatelessWidget {
     return FutureBuilder<bool>(
       future: _hasToken(),
       builder: (context, snapshot) {
-        // Enquanto carrega SharedPreferences
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // Se deu erro ou não achou token → vai pra tela de login
         if (!snapshot.hasData || snapshot.data == false) {
           return const LoginPage();
         }
 
-        // Se tem token → vai pra Home
         return const HomePage();
       },
     );

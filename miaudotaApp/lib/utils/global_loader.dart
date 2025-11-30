@@ -36,8 +36,8 @@ class _LogoCircleLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 95, // 🔥 antes estava 72 — aumentei
-      height: 95, // 🔥 aumenta o circulo e o espaço interno
+      width: 95,
+      height: 95,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -46,16 +46,10 @@ class _LogoCircleLoader extends StatelessWidget {
             height: 95,
             child: CircularProgressIndicator(
               strokeWidth: 4.5,
-              valueColor: AlwaysStoppedAnimation(
-                Color(0xFFFF8A00),
-              ), // opcional — deixa barra mais grossa e visível
+              valueColor: AlwaysStoppedAnimation(Color(0xFFFF8A00)),
             ),
           ),
-          Image.asset(
-            'assets/images/logo.png',
-            width: 46, // aumentei levemente a logo para equilibrar visual
-            height: 46,
-          ),
+          Image.asset('assets/images/logo.png', width: 46, height: 46),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
 import 'package:miaudota_app/theme/colors.dart';
+import 'package:miaudota_app/components/miaudota_top_bar.dart';
 
 class ProperFeedingPage extends StatelessWidget {
   const ProperFeedingPage({super.key});
@@ -37,25 +38,11 @@ class ProperFeedingPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Barra superior
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: const Color(0xFFFFE0B5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset('assets/images/logo.png', height: 64),
-                  const Text(
-                    'Alimentação Adequada',
-                    style: TextStyle(
-                      fontFamily: 'PoetsenOne',
-                      fontSize: 18,
-                      color: Color(0xFF1D274A),
-                    ),
-                  ),
-                ],
-              ),
+            const MiaudotaTopBar(
+              titulo: 'Alimentação Adequada',
+              showBackButton: true,
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),

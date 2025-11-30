@@ -106,10 +106,6 @@ class _PetFormPageState extends State<PetFormPage> {
           ),
         ),
       );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const EditProfilePage()),
-      );
       return;
     }
 
@@ -125,6 +121,11 @@ class _PetFormPageState extends State<PetFormPage> {
     final perfil = AppState.userProfile;
 
     try {
+      // pega o id como String
+      final userIdStr = await AuthService.getUserId();
+      // tenta converter pra int (se não conseguir, vira null)
+      final userId = userIdStr != null ? int.tryParse(userIdStr) : null;
+
       final petJson = await PetService.createPet(
         nome: _nomeController.text.trim(),
         especie: _especieController.text.trim(),
@@ -136,7 +137,7 @@ class _PetFormPageState extends State<PetFormPage> {
         bairro: _bairroController.text.trim(),
         telefoneTutor: perfil.telefone,
         fotoFile: File(_imagemSelecionada!.path),
-        usuarioId: await AuthService.getUserId(),
+        usuarioId: userId,
       );
 
       if (!mounted) return;
@@ -151,7 +152,6 @@ class _PetFormPageState extends State<PetFormPage> {
           cidade: petJson['cidade'],
           estado: petJson['estado'],
           bairro: petJson['bairro'],
-          // monta URL completa
           imagemPath: '${PetService.baseUrl}${petJson['foto'] ?? ''}',
           telefoneTutor: petJson['telefoneTutor'] ?? '',
         ),
@@ -184,7 +184,7 @@ class _PetFormPageState extends State<PetFormPage> {
           children: [
             MiaudotaTopBar(
               titulo: isEdit ? 'Editar pet' : 'Cadastrar pet',
-              showBackButton: false, // permite o botão voltar
+              showBackButton: true,
             ),
 
             // Conteúdo
@@ -217,7 +217,7 @@ class _PetFormPageState extends State<PetFormPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // 📸 Campo de foto
+                        // Campo de foto
                         GestureDetector(
                           onTap: () async {
                             final picked = await _picker.pickImage(
@@ -435,7 +435,7 @@ class _PetFormPageState extends State<PetFormPage> {
           ],
         ),
       ),
-      bottomNavigationBar: const MiaudotaBottomNav(currentIndex: 0),
+      bottomNavigationBar: const MiaudotaBottomNav(currentIndex: 3),
     );
   }
 

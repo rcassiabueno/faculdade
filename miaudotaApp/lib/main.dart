@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'splash_page.dart';
 import 'package:miaudota_app/theme/colors.dart';
+import 'package:miaudota_app/gateways/auth_gateway.dart';
 
 // Solicitação de adoção
 class SolicitacaoAdocao {
@@ -35,7 +36,7 @@ class UserProfile {
     this.nome = '',
     this.cpf = '',
     this.cnpj = '',
-    this.isPessoaJuridica = false, // padrão: pessoa física
+    this.isPessoaJuridica = false,
     this.email = '',
     this.telefone = '',
     this.estado = '',
@@ -131,6 +132,7 @@ class PetParaAdocao {
 }
 
 // Estado global do aplicativo (dados simulados)
+
 class AppState {
   static UserProfile userProfile = UserProfile(
     nome: 'Maria Silva',
@@ -157,6 +159,8 @@ class AppState {
       bairro: (json['bairro'] ?? '').toString(),
     );
   }
+
+  static AuthGateway? authGateway;
 }
 
 String formatCidadeEstado({String? cidade, String? estado}) {
@@ -233,9 +237,6 @@ class MiaudotaApp extends StatelessWidget {
 
           // LABEL cinza sempre que NÃO estiver focado
           labelStyle: const TextStyle(color: Color(0xFF777777), fontSize: 14),
-
-          // 👇 MUITO IMPORTANTE: não colocar floatingLabelStyle aqui
-          // floatingLabelStyle: ...  // ❌ NÃO USA
 
           // BORDA cinza (campo normal, focado ou não, desde que sem erro)
           enabledBorder: OutlineInputBorder(

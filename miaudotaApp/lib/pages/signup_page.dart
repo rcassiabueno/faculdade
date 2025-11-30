@@ -10,7 +10,16 @@ import 'home_page.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
 
 class SignupPage extends StatefulWidget {
-  const SignupPage({super.key});
+  final Future<void> Function({
+    required String nome,
+    required String cpf,
+    required String email,
+    required String telefone,
+    required String senha,
+  })
+  signupAction;
+
+  const SignupPage({super.key, this.signupAction = AuthService.signup});
 
   @override
   State<SignupPage> createState() => _SignupPageState();
@@ -48,6 +57,55 @@ class _SignupPageState extends State<SignupPage> {
     filter: {"#": RegExp(r'[0-9]')},
   );
 
+  bool _isValidCPF(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+
+    if (digits.length != 11 || RegExp(r'^(\d)\1{10}$').hasMatch(digits)) {
+      return false;
+    }
+
+    int calc(int len) {
+      final sum = Iterable<int>.generate(
+        len,
+        (i) => int.parse(digits[i]) * (len + 1 - i),
+      ).reduce((a, b) => a + b);
+
+      final mod = (sum * 10) % 11;
+      return mod == 10 ? 0 : mod;
+    }
+
+    return calc(9) == int.parse(digits[9]) && calc(10) == int.parse(digits[10]);
+  }
+
+  bool _isValidCNPJ(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+
+    if (digits.length != 14 || RegExp(r'^(\d)\1{13}$').hasMatch(digits)) {
+      return false;
+    }
+
+    List<int> mult(List<int> weights) => List<int>.generate(
+      weights.length,
+      (i) => int.parse(digits[i]) * weights[i],
+    );
+
+    int dv(List<int> weights) {
+      final sum = mult(weights).reduce((a, b) => a + b);
+      final mod = sum % 11;
+      return mod < 2 ? 0 : 11 - mod;
+    }
+
+    final d1 = dv([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+    final d2 = dv([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+
+    return d1 == int.parse(digits[12]) && d2 == int.parse(digits[13]);
+  }
+
+  bool _isValidTelefone(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    return digits.length == 11; // (##) #####-####
+  }
+
   @override
   void dispose() {
     _nomeController.dispose();
@@ -63,7 +121,7 @@ class _SignupPageState extends State<SignupPage> {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      floatingLabelStyle: MaterialStateTextStyle.resolveWith(
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
         (states) => TextStyle(
           color: _labelColor(states),
           fontSize: 14,
@@ -76,7 +134,6 @@ class _SignupPageState extends State<SignupPage> {
   Future<void> _criarConta() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // pega só os dígitos de CPF ou CNPJ
     final cpfDigits = !_isPessoaJuridica
         ? _cpfMaskFormatter.getUnmaskedText()
         : '';
@@ -87,32 +144,42 @@ class _SignupPageState extends State<SignupPage> {
     setState(() => _carregando = true);
     GlobalLoader.show(context);
 
+    bool erro = false;
+
     try {
-      await AuthService.signup(
+      await widget.signupAction(
         nome: _nomeController.text.trim(),
         cpf: cpfDigits.isNotEmpty ? cpfDigits : cnpjDigits,
         email: _emailController.text.trim(),
         telefone: _telefoneController.text.trim(),
         senha: _senhaController.text.trim(),
       );
+    } catch (e) {
+      erro = true;
 
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          e.toString().replaceFirst('Exception:', '').trim(),
+        );
+      }
+    }
+
+    if (!mounted) return;
+
+    GlobalLoader.hide();
+    setState(() => _carregando = false);
+
+    if (!erro) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomePage()),
       );
-    } catch (e) {
-      SnackbarUtils.showError(
-        context,
-        e.toString().replaceFirst('Exception:', '').trim(),
-      );
-    } finally {
-      GlobalLoader.hide();
-      if (mounted) setState(() => _carregando = false);
     }
   }
 
-  Color _labelColor(Set<MaterialState> states) {
-    if (states.contains(MaterialState.focused)) {
+  Color _labelColor(Set<WidgetState> states) {
+    if (states.contains(WidgetState.focused)) {
       return primaryOrange;
     }
     return const Color(0xFF777777);
@@ -217,12 +284,8 @@ class _SignupPageState extends State<SignupPage> {
                               validator: (v) {
                                 final digits =
                                     v?.replaceAll(RegExp(r'\D'), '') ?? '';
-                                if (digits.isEmpty) {
-                                  return 'Informe seu CPF';
-                                }
-                                if (digits.length != 11) {
-                                  return 'Informe um CPF válido';
-                                }
+                                if (digits.isEmpty) return 'Informe seu CPF';
+                                if (!_isValidCPF(digits)) return 'CPF inválido';
                                 return null;
                               },
                             )
@@ -235,11 +298,9 @@ class _SignupPageState extends State<SignupPage> {
                               validator: (v) {
                                 final digits =
                                     v?.replaceAll(RegExp(r'\D'), '') ?? '';
-                                if (digits.isEmpty) {
-                                  return 'Informe seu CNPJ';
-                                }
-                                if (digits.length != 14) {
-                                  return 'Informe um CNPJ válido';
+                                if (digits.isEmpty) return 'Informe seu CNPJ';
+                                if (!_isValidCNPJ(digits)) {
+                                  return 'CNPJ inválido';
                                 }
                                 return null;
                               },
@@ -294,9 +355,15 @@ class _SignupPageState extends State<SignupPage> {
                             decoration: _fieldDecoration(
                               'Digite seu número de celular*',
                             ),
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Informe seu telefone'
-                                : null,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Informe seu telefone';
+                              }
+                              if (!_isValidTelefone(v)) {
+                                return 'Telefone incompleto';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 12),
 

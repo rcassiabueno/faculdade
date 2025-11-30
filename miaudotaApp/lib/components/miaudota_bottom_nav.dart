@@ -20,7 +20,7 @@ class MiaudotaBottomNav extends StatelessWidget {
       unselectedItemColor: const Color(0xFF999999),
       showUnselectedLabels: true,
       onTap: (index) {
-        if (index == currentIndex) return; // já estou nessa aba, não faz nada
+        if (index == currentIndex) return;
 
         if (index == 0) {
           // Home

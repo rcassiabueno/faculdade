@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
 import 'package:miaudota_app/theme/colors.dart';
+import 'package:miaudota_app/components/miaudota_top_bar.dart';
 
 class CareAndAffectionPage extends StatelessWidget {
   const CareAndAffectionPage({super.key});
@@ -37,24 +38,9 @@ class CareAndAffectionPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Barra superior
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: const Color(0xFFFFE0B5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset('assets/images/logo.png', height: 64),
-                  const Text(
-                    'Cuidado e Afeto',
-                    style: TextStyle(
-                      fontFamily: 'PoetsenOne',
-                      fontSize: 18,
-                      color: Color(0xFF1D274A),
-                    ),
-                  ),
-                ],
-              ),
+            const MiaudotaTopBar(
+              titulo: 'Cuidado e Afeto',
+              showBackButton: true,
             ),
 
             Expanded(

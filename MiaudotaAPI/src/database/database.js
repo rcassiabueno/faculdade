@@ -9,14 +9,14 @@ const dbPath = path.resolve(__dirname, "miaudota.db");
 
 export const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
-    console.error("❌ Erro ao conectar ao banco SQLite:", err.message);
+    console.error("Erro ao conectar ao banco SQLite:", err.message);
   } else {
-    console.log("✅ Conectado ao banco SQLite em:", dbPath);
+    console.log("Conectado ao banco SQLite em:", dbPath);
   }
 });
 
 db.serialize(() => {
-  // 🔹 USUÁRIOS (já alinhado com seu users.controller e EditProfilePage)
+  // USUÁRIOS (já alinhado com seu users.controller e EditProfilePage)
   db.run(
     `
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -34,12 +34,12 @@ db.serialize(() => {
     );
   `,
     (err) => {
-      if (err) console.error("❌ Erro ao criar tabela usuarios:", err.message);
-      else console.log("✅ Tabela usuarios pronta para uso");
+      if (err) console.error("Erro ao criar tabela usuarios:", err.message);
+      else console.log("Tabela usuarios pronta para uso");
     }
   );
 
-  // 🔹 ENDEREÇOS (opcional – só use se for realmente utilizar endereço separado)
+  // ENDEREÇOS (opcional – só use se for realmente utilizar endereço separado)
   db.run(
     `
     CREATE TABLE IF NOT EXISTS enderecos (
@@ -51,12 +51,12 @@ db.serialize(() => {
   `,
     (err) => {
       if (err)
-        console.error("❌ Erro ao criar tabela enderecos:", err.message);
-      else console.log("✅ Tabela enderecos pronta para uso");
+        console.error("Erro ao criar tabela enderecos:", err.message);
+      else console.log("Tabela enderecos pronta para uso");
     }
   );
 
-  // 🔹 PETS – ESSA É A CHAVE PRO createPet FUNCIONAR
+  // PETS – ESSA É A CHAVE PRO createPet FUNCIONAR
   db.run(
     `
     CREATE TABLE IF NOT EXISTS pets (
@@ -77,14 +77,14 @@ db.serialize(() => {
   `,
     (err) => {
       if (err) {
-        console.error("❌ Erro ao criar tabela pets:", err.message);
+        console.error("Erro ao criar tabela pets:", err.message);
       } else {
-        console.log("✅ Tabela pets pronta para uso");
+        console.log("Tabela pets pronta para uso");
       }
     }
   );
 
-  // 🔹 TOKENS DE REDEFINIÇÃO DE SENHA
+  // TOKENS DE REDEFINIÇÃO DE SENHA
   db.run(
     `
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -98,10 +98,10 @@ db.serialize(() => {
     (err) => {
       if (err)
         console.error(
-          "❌ Erro ao criar tabela password_reset_tokens:",
+          "Erro ao criar tabela password_reset_tokens:",
           err.message
         );
-      else console.log("✅ Tabela password_reset_tokens pronta para uso");
+      else console.log("Tabela password_reset_tokens pronta para uso");
     }
   );
 });

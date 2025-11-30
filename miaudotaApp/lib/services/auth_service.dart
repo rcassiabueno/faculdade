@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:miaudota_app/main.dart';
+import 'package:miaudota_app/gateways/auth_gateway.dart';
 
 class AuthService {
+  // Base URL para a API (emulador Android x desktop)
   static String get baseUrl {
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000';
@@ -13,11 +16,12 @@ class AuthService {
     }
   }
 
+  /// LOGIN
   static Future<void> login(String email, String senha) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/login'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"email": email, "senha": senha}),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'senha': senha}),
     );
 
     if (response.statusCode == 200) {
@@ -25,28 +29,32 @@ class AuthService {
       final usuario = data['usuario'];
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('usuario', jsonEncode(data['usuario']));
+      await prefs.setString('usuario', jsonEncode(usuario));
+
+      // ID sempre salvo como STRING
+      if (usuario['id'] != null) {
+        await prefs.setString('user_id', usuario['id'].toString());
+      }
 
       if (data['token'] != null) {
         await prefs.setString('token', data['token']);
       }
 
       AppState.atualizarPerfilAPartirDoJson(usuario);
-
-      await prefs.setInt('user_id', usuario['id']);
-    } else {
-      String message;
-      try {
-        final body = jsonDecode(response.body);
-        message = body['error'] ?? body['message'] ?? 'Erro ao fazer login';
-      } catch (_) {
-        message = 'Erro ${response.statusCode}: ${response.reasonPhrase}';
-      }
-      throw Exception(message);
+      return;
     }
+
+    String message;
+    try {
+      final body = jsonDecode(response.body);
+      message = body['error'] ?? body['message'] ?? 'Erro ao fazer login';
+    } catch (_) {
+      message = 'Erro ${response.statusCode}: ${response.reasonPhrase}';
+    }
+    throw Exception(message);
   }
 
-  // ✅ CADASTRO USANDO /users/register
+  /// CADASTRO
   static Future<void> signup({
     required String nome,
     required String cpf,
@@ -56,52 +64,39 @@ class AuthService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/register'),
-      headers: {"Content-Type": "application/json"},
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        "nome": nome,
-        "cpf": cpf,
-        "email": email,
-        "telefone": telefone,
-        "senha": senha,
+        'nome': nome,
+        'cpf': cpf,
+        'email': email,
+        'telefone': telefone,
+        'senha': senha,
       }),
     );
 
-    print('SIGNUP status: ${response.statusCode}');
-    print('SIGNUP body: ${response.body}');
-
     if (response.statusCode == 200 || response.statusCode == 201) {
+      final prefs = await SharedPreferences.getInstance();
       try {
         final data = jsonDecode(response.body);
-        final prefs = await SharedPreferences.getInstance();
 
-        // 👇 se o backend devolve "usuario" igual no register:
         if (data['usuario'] != null) {
           final usuario = data['usuario'];
-
-          // salva usuário bruto
           await prefs.setString('usuario', jsonEncode(usuario));
 
-          // salva ID para usar no updateProfile, pets etc.
           if (usuario['id'] != null) {
-            await prefs.setInt('user_id', usuario['id']);
+            await prefs.setString('user_id', usuario['id'].toString());
           }
 
-          // atualiza perfil em memória (AppState)
           AppState.atualizarPerfilAPartirDoJson(usuario);
         }
 
-        // se um dia você devolver token no register, já tá pronto:
         if (data['token'] != null) {
           await prefs.setString('token', data['token']);
         }
-      } catch (e) {
-        // se não vier JSON estruturado, só loga e segue
-        print('Erro ao processar resposta do signup: $e');
-      }
+      } catch (_) {}
       return;
     }
 
-    // erro
     String message;
     try {
       final body = jsonDecode(response.body);
@@ -112,6 +107,7 @@ class AuthService {
     throw Exception(message);
   }
 
+  /// Usuário logado (JSON bruto)
   static Future<Map<String, dynamic>?> getUsuarioLogado() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString('usuario');
@@ -119,16 +115,27 @@ class AuthService {
     return jsonDecode(jsonStr);
   }
 
+  /// Token
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token'); // retorna null se não tiver token
+    return prefs.getString('token');
   }
 
+  static Future<String?> getUserId() async {
+    // se tiver gateway (pra testes/mock), usa ele
+    if (AppState.authGateway != null) {
+      return await AppState.authGateway!.getUserId();
+    }
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id');
+  }
+
+  /// Esqueci a senha → fluxo por e-mail
   static Future<void> forgotPassword(String email) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/users/forgot-password'), // 👈 tem que estar assim
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"email": email}),
+      Uri.parse('$baseUrl/users/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
     );
 
     if (response.statusCode != 200) {
@@ -136,6 +143,7 @@ class AuthService {
     }
   }
 
+  /// Reset de senha via CPF (fluxo local do app)
   static Future<void> resetPasswordByCpf({
     required String email,
     required String cpf,
@@ -143,22 +151,27 @@ class AuthService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/reset-password/by-cpf'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"email": email, "cpf": cpf, "novaSenha": novaSenha}),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'cpf': cpf, 'novaSenha': novaSenha}),
     );
 
     if (response.statusCode != 200) {
       try {
         final body = jsonDecode(response.body);
-        throw Exception(body['error'] ?? body['message'] ?? 'Erro ao redefinir senha');
+        throw Exception(
+          body['error'] ?? body['message'] ?? 'Erro ao redefinir senha',
+        );
       } catch (_) {
-        throw Exception('Erro ${response.statusCode}: ${response.reasonPhrase}');
+        throw Exception(
+          'Erro ${response.statusCode}: ${response.reasonPhrase}',
+        );
       }
     }
   }
 
+  /// Atualizar perfil
   static Future<void> updateProfile({
-    required int userId,
+    required String userId,
     required String nome,
     required String cpf,
     required String telefone,
@@ -168,14 +181,24 @@ class AuthService {
     String? cnpj,
     bool isPessoaJuridica = false,
   }) async {
-    final url = Uri.parse('$baseUrl/users/profile/$userId');
+    // se tiver gateway, delega
+    if (AppState.authGateway != null) {
+      return await AppState.authGateway!.updateProfile(
+        userId: userId,
+        nome: nome,
+        cpf: cpf,
+        telefone: telefone,
+        cidade: cidade,
+        estado: estado,
+        bairro: bairro,
+        cnpj: cnpj,
+        isPessoaJuridica: isPessoaJuridica,
+      );
+    }
 
     final response = await http.put(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        // se depois você tiver token, coloca Authorization aqui
-      },
+      Uri.parse('$baseUrl/users/profile/$userId'),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'userId': userId,
         'nome': nome,
@@ -195,24 +218,29 @@ class AuthService {
     }
   }
 
-  // dica: guarde também o id do usuário ao fazer login
-  static Future<void> saveUserId(int id) async {
+  /// Salva ID manualmente (caso precise)
+  static Future<void> saveUserId(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('user_id', id);
+    await prefs.setString('user_id', id);
   }
 
-  static Future<int?> getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('user_id');
-  }
-
+  /// Logout
   static Future<void> logout() async {
+    if (AppState.authGateway != null) {
+      return await AppState.authGateway!.logout();
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('usuario');
     await prefs.remove('token');
+    await prefs.remove('user_id');
   }
 
-  static Future<void> deleteAccount(int userId) async {
+  /// Excluir conta
+  static Future<void> deleteAccount(String userId) async {
+    if (AppState.authGateway != null) {
+      return await AppState.authGateway!.deleteAccount(userId);
+    }
+
     final token = await getToken();
     final url = Uri.parse('$baseUrl/users/$userId');
 

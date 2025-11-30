@@ -1,3 +1,6 @@
+// Função desativada no momento.
+
+
 import crypto from "crypto";
 import { db } from "../database/database.js";
 import bcrypt from "bcrypt";

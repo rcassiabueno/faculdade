@@ -1,7 +1,7 @@
 import { db } from "../database/database.js";
 import bcrypt from "bcrypt";
-import { transporter } from "../services/email.service.js";
 import crypto from "crypto";
+//import { transporter } from "../services/email.service.js"; inserir posteriormente quando usar email.
 
 // POST /users/register
 export const register = (req, res) => {
@@ -116,52 +116,20 @@ export const login = (req, res) => {
 export const forgotPassword = (req, res) => {
   const { email } = req.body;
 
-  if (!email) return res.status(400).json({ error: "E-mail é obrigatório" });
+  if (!email) {
+    return res.status(400).json({ error: "E-mail é obrigatório" });
+  }
 
-  const sqlUser = `SELECT * FROM usuarios WHERE email = ? LIMIT 1`;
+  // Funcionalidade de recuperação de senha por e-mail desativada nesta versão.
+  // Mantemos a rota apenas para não quebrar chamadas antigas, mas ela não
+  // envia mais e-mail nem gera token.
 
-  db.get(sqlUser, [email], (err, usuario) => {
-    if (err) return res.status(500).json({ error: "Erro interno" });
-
-    // Não revela se o e-mail existe para segurança
-    if (!usuario) {
-      return res.json({ message: "Se o e-mail existir, enviaremos instruções." });
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = Date.now() + 1000 * 60 * 30; // 30 minutos
-
-    const sqlInsert = `
-      INSERT INTO password_reset_tokens (usuario_id, token, expires_at)
-      VALUES (?, ?, ?)
-    `;
-
-    db.run(sqlInsert, [usuario.id, token, expiresAt], async err => {
-      if (err) return res.status(500).json({ error: "Erro ao gerar token" });
-
-      const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
-
-      try {
-        await transporter.sendMail({
-          from: process.env.EMAIL_FROM || `Miaudota <${process.env.EMAIL_USER}>`,
-          to: email,
-          subject: "Redefinição de senha - Miaudota 🐾",
-          html: `
-            <h2>Redefinir senha</h2>
-            <p>Clique no link abaixo para redefinir sua senha:</p>
-            <a href="${resetLink}">${resetLink}</a>
-            <p>Este link é válido por 30 minutos.</p>
-          `,
-        });
-      } catch (mailErr) {
-        console.error('❌ Erro ao enviar e-mail de redefinição:', mailErr.message || mailErr);
-        return res.status(500).json({ error: 'Erro ao enviar e-mail de redefinição' });
-      }
-
-      return res.json({ message: "Se o e-mail existir, enviaremos instruções." });
-    });
+  return res.status(503).json({
+    error:
+      "Recuperação de senha via e-mail está desativada nesta versão. Use a redefinição de senha pelo CPF no aplicativo.",
   });
 };
+
 
 export const resetPassword = (req, res) => {
   const { token, novaSenha } = req.body;
@@ -193,6 +161,7 @@ export const resetPassword = (req, res) => {
     });
   });
 };
+
 
 export const updateProfile = (req, res) => {
   const { id } = req.params;

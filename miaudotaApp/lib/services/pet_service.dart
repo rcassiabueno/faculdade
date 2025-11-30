@@ -12,7 +12,7 @@ class PetService {
     }
   }
 
-  // LISTAR PETS (igual está)
+  // LISTAR PETS
   static Future<List<dynamic>> getPets() async {
     final token = await AuthService.getToken();
 
@@ -38,7 +38,7 @@ class PetService {
     }
   }
 
-  // 🔥 CRIAR PET COM UPLOAD DE FOTO
+  // CRIAR PET COM UPLOAD DE FOTO
   static Future<Map<String, dynamic>> createPet({
     required String nome,
     required String especie,
@@ -57,7 +57,6 @@ class PetService {
 
     final request = http.MultipartRequest('POST', uri);
 
-    // campos normais
     request.fields['nome'] = nome;
     request.fields['especie'] = especie;
     request.fields['raca'] = raca;
@@ -74,7 +73,7 @@ class PetService {
     // arquivo (se tiver)
     if (fotoFile != null) {
       final multipartFile = await http.MultipartFile.fromPath(
-        'foto', // 👈 TEM QUE SER O MESMO NOME DO upload.single('foto')
+        'foto', // TEM QUE SER O MESMO NOME DO upload.single('foto')
         fotoFile.path,
       );
       request.files.add(multipartFile);

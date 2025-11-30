@@ -9,14 +9,9 @@ import '../../utils/snackbar_utils.dart';
 import '../../utils/global_loader.dart';
 
 class LoginPage extends StatefulWidget {
-  /// Optional injected login function to facilitate testing. Defaults to
-  /// `AuthService.login` behavior in production.
   final Future<void> Function(String email, String senha) loginAction;
 
-  const LoginPage({
-    super.key,
-    this.loginAction = AuthService.login,
-  });
+  const LoginPage({super.key, this.loginAction = AuthService.login});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -64,8 +59,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Color _labelColor(Set<MaterialState> states) {
-    if (states.contains(MaterialState.focused)) {
+  Color _labelColor(Set<WidgetState> states) {
+    if (states.contains(WidgetState.focused)) {
       return primaryOrange; // focado → laranja
     }
     return const Color(0xFF777777); // sem foco → cinza

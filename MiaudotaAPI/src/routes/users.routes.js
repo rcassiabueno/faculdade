@@ -6,7 +6,7 @@ import {
   forgotPassword,
   resetPassword,
   updateProfile,
-  deleteUser,   // 👈 importa aqui
+  deleteUser,   
   resetPasswordByCpf,
 } from "../controllers/users.controller.js";
 

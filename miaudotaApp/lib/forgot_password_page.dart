@@ -1,19 +1,32 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/colors.dart';
 import '../services/auth_service.dart';
 import '../../utils/snackbar_utils.dart';
 import '../../utils/global_loader.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
 
-// NOTE: Temporarily disabled email-based reset UI and 'redefinir aqui no app'.
-// The email field and in-app reset toggle are commented out below; this file
-// retains the backend calls and tests but hides the UI — to revert, uncomment
-// the commented blocks and restore the logic in `_enviarLink`.
+/// Tela de "Esqueci minha senha"
+///
+/// Atualmente suporta apenas o fluxo de redefinição **local**:
+/// - Usuário informa e-mail, CPF, nova senha e confirmação.
+/// - O app chama `resetPasswordByCpfAction` (por padrão, `AuthService.resetPasswordByCpf`).
+///
+/// Observação:
+/// - A funcionalidade de envio de link por e-mail foi desativada.
+/// - A propriedade [forgotPasswordAction] é mantida apenas por compatibilidade,
+///   mas não é utilizada nesta UI.
 class ForgotPasswordPage extends StatefulWidget {
-  /// Optional callback to perform the forgot-password action. It's injected
-  /// to make the page testable (default uses AuthService.forgotPassword).
+  /// Mantido por compatibilidade, mas não é usado na UI atual.
   final Future<void> Function(String) forgotPasswordAction;
-  final Future<void> Function({required String email, required String cpf, required String novaSenha}) resetPasswordByCpfAction;
+
+  /// Ação utilizada para redefinir a senha localmente usando e-mail + CPF.
+  final Future<void> Function({
+    required String email,
+    required String cpf,
+    required String novaSenha,
+  })
+  resetPasswordByCpfAction;
 
   const ForgotPasswordPage({
     super.key,
@@ -27,14 +40,15 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
 
-  bool _enviando = false;
-  bool _localReset = true; // keep local reset visible and enabled
-  bool _useEmailLink = false; // toggle between email link and local reset
+  // Campos da tela
+  final _emailController = TextEditingController();
   final _cpfController = TextEditingController();
   final _novaSenhaController = TextEditingController();
   final _confirmSenhaController = TextEditingController();
+
+  // Indica se há requisição em andamento (evita duplo clique)
+  bool _enviando = false;
 
   Color _labelColor(Set<MaterialState> states) {
     if (states.contains(MaterialState.focused)) {
@@ -65,32 +79,23 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  // In the current temporary state, email-based sending is disabled. Inform the user.
-  // removed _mostrarDesativado; local reset is active
-
-  // Centraliza a lógica do envio do link de redefinição
-  // - valida o formulário
-  // - mostra loader e snackbar
-  // - trata exceções e garante o hide do loader
-  // NOTE: this method is kept `Future<void>` (not `void`) to allow tests and `await` usage
-  Future<void> _enviarLink() async {
+  /// Centraliza a lógica da redefinição local de senha:
+  /// - valida o formulário
+  /// - mostra loader
+  /// - chama [resetPasswordByCpfAction]
+  /// - exibe snackbar de sucesso ou erro
+  Future<void> _redefinirSenha() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Hides keyboard
     FocusScope.of(context).unfocus();
 
     setState(() => _enviando = true);
     GlobalLoader.show(context);
 
     try {
-      if (_useEmailLink) {
-        // send link via email
-        await widget.forgotPasswordAction(_emailController.text.trim());
-        SnackbarUtils.showSuccess(context, 'Se o e-mail estiver cadastrado, enviaremos um link para redefinir a senha.');
-      } else {
-        // local reset (email route is intentionally not used in the UI)
       final novaSenha = _novaSenhaController.text.trim();
       final confirmSenha = _confirmSenhaController.text.trim();
+
       if (novaSenha.length < 6) {
         throw Exception('A senha deve ter no mínimo 6 caracteres');
       }
@@ -98,18 +103,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         throw Exception('As senhas não coincidem');
       }
 
-        await widget.resetPasswordByCpfAction(
+      await widget.resetPasswordByCpfAction(
         email: _emailController.text.trim(),
         cpf: _cpfController.text.trim(),
         novaSenha: novaSenha,
       );
 
-        SnackbarUtils.showSuccess(context, 'Senha redefinida com sucesso');
-      }
+      SnackbarUtils.showSuccess(context, 'Senha redefinida com sucesso');
       await Future.delayed(const Duration(milliseconds: 600));
+
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      SnackbarUtils.showError(context, e.toString().replaceFirst('Exception:', '').trim());
+      SnackbarUtils.showError(
+        context,
+        e.toString().replaceFirst('Exception:', '').trim(),
+      );
     } finally {
       GlobalLoader.hide();
       if (mounted) setState(() => _enviando = false);
@@ -147,7 +155,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Digite seu e-mail e CPF para redefinir sua senha aqui mesmo no aplicativo.',
+                        'Digite seu e-mail, CPF e a nova senha para redefinir sua senha aqui mesmo no aplicativo.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
@@ -156,7 +164,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Campo de e-mail (usado para identificar usuario)
+                      // E-mail
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -167,141 +175,73 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             return 'Informe seu e-mail';
                           }
                           final email = value.trim();
-                          final regex = RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$");
-                          if (!regex.hasMatch(email)) return 'Informe um e-mail válido';
+                          final regex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                          if (!regex.hasMatch(email)) {
+                            return 'Informe um e-mail válido';
+                          }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Expanded(child: Text('Enviar link por e-mail')),
-                          Switch(
-                            value: _useEmailLink,
-                            onChanged: (v) => setState(() => _useEmailLink = v),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       const SizedBox(height: 12),
+
                       // CPF
-                      if (!_useEmailLink) ...[
                       TextFormField(
                         controller: _cpfController,
                         keyboardType: TextInputType.number,
                         decoration: _fieldDecoration('CPF*'),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Informe seu CPF';
-                          if (value.replaceAll(RegExp(r"\D"), '').length < 11) return 'CPF inválido';
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Informe seu CPF';
+                          }
+                          if (value.replaceAll(RegExp(r'\D'), '').length < 11) {
+                            return 'CPF inválido';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
-                      ],
-                      const SizedBox(height: 12),
+
                       // Nova senha
-                      if (!_useEmailLink) ...[
                       TextFormField(
                         controller: _novaSenhaController,
                         obscureText: true,
                         decoration: _fieldDecoration('Nova senha*'),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Informe a nova senha';
-                          if (value.length < 6) return 'Senha muito curta (mínimo 6 caracteres)';
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Informe a nova senha';
+                          }
+                          if (value.length < 6) {
+                            return 'Senha muito curta (mínimo 6 caracteres)';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
+
                       // Confirmar senha
                       TextFormField(
                         controller: _confirmSenhaController,
                         obscureText: true,
                         decoration: _fieldDecoration('Confirmar senha*'),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Confirme a senha';
-                          if (value != _novaSenhaController.text) return 'As senhas não coincidem';
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Confirme a senha';
+                          }
+                          if (value != _novaSenhaController.text) {
+                            return 'As senhas não coincidem';
+                          }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 12),
-                      ],
-                      const SizedBox(height: 12),
-                      // Confirmar senha
-                      TextFormField(
-                        controller: _confirmSenhaController,
-                        obscureText: true,
-                        decoration: _fieldDecoration('Confirmar senha*'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Confirme a senha';
-                          if (value != _novaSenhaController.text) return 'As senhas não coincidem';
-                          return null;
-                        },
-                      ),
-                      /*
-                      const SizedBox(height: 12),
-                      // Toggle para modo local (sem e-mail)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Redefinir aqui no app'),
-                          Switch(
-                            value: _localReset,
-                            onChanged: (v) {
-                              setState(() {
-                                _localReset = v;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      if (_localReset) ...[
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _cpfController,
-                          keyboardType: TextInputType.number,
-                          decoration: _fieldDecoration('CPF*'),
-                          validator: (value) {
-                            if (!_localReset) return null;
-                            if (value == null || value.trim().isEmpty) return 'Informe seu CPF';
-                            if (value.replaceAll(RegExp(r"\D"), '').length < 11) return 'CPF inválido';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _novaSenhaController,
-                          obscureText: true,
-                          decoration: _fieldDecoration('Nova senha*'),
-                          validator: (value) {
-                            if (!_localReset) return null;
-                            if (value == null || value.isEmpty) return 'Informe a nova senha';
-                            if (value.length < 6) return 'Senha muito curta (mínimo 6 caracteres)';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _confirmSenhaController,
-                          obscureText: true,
-                          decoration: _fieldDecoration('Confirmar senha*'),
-                          validator: (value) {
-                            if (!_localReset) return null;
-                            if (value == null || value.isEmpty) return 'Confirme a senha';
-                            if (value != _novaSenhaController.text) return 'As senhas não coincidem';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      */
+
                       const SizedBox(height: 24),
 
-                      // Botão enviar
+                      // Botão "Redefinir senha"
                       SizedBox(
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: _enviando ? null : _enviarLink,
-                            child: _enviando
+                          onPressed: _enviando ? null : _redefinirSenha,
+                          child: _enviando
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
@@ -310,8 +250,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                                : Text(
-                                  _useEmailLink ? 'Enviar link' : 'Redefinir senha',
+                              : const Text(
+                                  'Redefinir senha',
                                   style: TextStyle(
                                     fontFamily: 'PoetsenOne',
                                     fontWeight: FontWeight.w400,

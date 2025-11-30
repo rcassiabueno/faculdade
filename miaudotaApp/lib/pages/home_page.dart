@@ -47,7 +47,6 @@ class _HomePageState extends State<HomePage> {
           descricao: p['descricao'] ?? '',
           especie: p['especie'] ?? '',
           raca: p['raca'] ?? '',
-          // no backend já vem "2 anos", então não coloca "anos" de novo
           idade: p['idade'] ?? '',
           bairro: p['bairro'] ?? '',
           cidade: p['cidade'] ?? '',
@@ -400,7 +399,8 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Barra superior
+            // Barra superior (não inseri o MiaudotaTopBar para poder
+            // customizar o conteúdo)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               color: const Color(0xFFFFE0B5),

@@ -1,14 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:miaudota_app/main.dart';
 import 'package:miaudota_app/theme/colors.dart';
 import 'package:miaudota_app/login_page.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
-import 'package:miaudota_app/services/auth_service.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:miaudota_app/services/auth_service.dart';
 
 class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({super.key});
+  final Future<String?> Function()? getUserIdAction;
+
+  final Future<void> Function({
+    required String userId,
+    required String nome,
+    required String cpf,
+    required String telefone,
+    required String cidade,
+    required String estado,
+    required String bairro,
+    String? cnpj,
+    bool isPessoaJuridica,
+  })?
+  updateProfileAction;
+
+  final Future<void> Function(String userId)? deleteAccountAction;
+  final Future<void> Function()? logoutAction;
+
+  const EditProfilePage({
+    super.key,
+    this.getUserIdAction,
+    this.updateProfileAction,
+    this.deleteAccountAction,
+    this.logoutAction,
+  });
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -75,9 +100,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: primaryOrange, width: 1.4),
       ),
-
       labelStyle: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 14),
-
       floatingLabelStyle: WidgetStateTextStyle.resolveWith(
         (states) => TextStyle(
           color: _labelColor(states),
@@ -88,7 +111,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _salvarPerfil() async {
+  Future<void> _salvarPerfil() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Preencha todos os campos obrigatórios.')),
@@ -96,8 +119,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
 
-    final userId = await AuthService.getUserId();
+    final getUserId = widget.getUserIdAction ?? AuthService.getUserId;
+    final updateProfile =
+        widget.updateProfileAction ?? AuthService.updateProfile;
 
+    final userId = await getUserId();
     if (!mounted) return;
 
     if (userId == null) {
@@ -111,7 +137,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final cnpj = _isPessoaJuridica ? _cnpjController.text.trim() : '';
 
     try {
-      await AuthService.updateProfile(
+      await updateProfile(
         userId: userId,
         nome: _nomeController.text.trim(),
         cpf: cpf.isNotEmpty ? cpf : cnpj,
@@ -119,25 +145,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
         cidade: _cidadeController.text.trim(),
         estado: _estadoSelecionado ?? '',
         bairro: _bairroController.text.trim(),
+        cnpj: cnpj.isNotEmpty ? cnpj : null,
+        isPessoaJuridica: _isPessoaJuridica,
       );
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erro ao salvar no servidor: $e')));
       return;
     }
 
-    AppState.userProfile.nome = _nomeController.text.trim();
-    AppState.userProfile.cpf = _cpfController.text.trim();
-    AppState.userProfile.cnpj = cnpj;
-    AppState.userProfile.isPessoaJuridica = _isPessoaJuridica;
-    AppState.userProfile.email = _emailController.text.trim();
-    AppState.userProfile.telefone = _telefoneController.text.trim();
-    AppState.userProfile.estado = _estadoSelecionado ?? '';
-    AppState.userProfile.cidade = _cidadeController.text.trim();
-    AppState.userProfile.bairro = _bairroController.text.trim();
+    // Atualiza AppState em memória
+    AppState.userProfile
+      ..nome = _nomeController.text.trim()
+      ..cpf = _cpfController.text.trim()
+      ..cnpj = cnpj
+      ..isPessoaJuridica = _isPessoaJuridica
+      ..email = _emailController.text.trim()
+      ..telefone = _telefoneController.text.trim()
+      ..estado = _estadoSelecionado ?? ''
+      ..cidade = _cidadeController.text.trim()
+      ..bairro = _bairroController.text.trim();
 
     if (!mounted) return;
     Navigator.pop(context);
@@ -160,11 +189,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
           actionsPadding: const EdgeInsets.only(right: 12, bottom: 8, top: 8),
           actions: [
-            // CANCELAR
             TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFE7EBF7),
-                foregroundColor: Color(0xFF1D274A),
+                foregroundColor: const Color(0xFF1D274A),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
@@ -181,8 +209,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-
-            // EXCLUIR
             TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFFFE5E5),
@@ -195,16 +221,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-
               onPressed: () async {
                 Navigator.pop(ctx);
 
-                final userId = await AuthService.getUserId();
+                final getUserId =
+                    widget.getUserIdAction ?? AuthService.getUserId;
+                final deleteAccount =
+                    widget.deleteAccountAction ?? AuthService.deleteAccount;
+                final logout = widget.logoutAction ?? AuthService.logout;
+
+                final userId = await getUserId();
                 if (!mounted) return;
 
                 if (userId != null) {
                   try {
-                    await AuthService.deleteAccount(userId);
+                    await deleteAccount(userId);
                   } catch (e) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -216,7 +247,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   }
                 }
 
-                await AuthService.logout();
+                await logout();
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove('user_id');
 
@@ -290,7 +321,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
-
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -307,9 +337,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 16),
 
+                        // chips PF/PJ
                         Wrap(
                           alignment: WrapAlignment.center,
-                          spacing: 8, // distância entre os botões
+                          spacing: 8,
                           runSpacing: 8,
                           children: [
                             ChoiceChip(
@@ -346,9 +377,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 14),
 
-                        // DOCUMENTO PRIMEIRO (CPF ou CNPJ)
+                        // DOCUMENTO: CPF ou CNPJ
                         if (!_isPessoaJuridica)
                           TextFormField(
+                            key: const Key('cpfField'),
                             controller: _cpfController,
                             decoration: _inputDecoration('Digite seu CPF*'),
                             keyboardType: TextInputType.number,
@@ -365,6 +397,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           )
                         else
                           TextFormField(
+                            key: const Key('cnpjField'),
                             controller: _cnpjController,
                             decoration: _inputDecoration('Digite seu CNPJ*'),
                             keyboardType: TextInputType.number,
@@ -383,6 +416,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         const SizedBox(height: 14),
 
                         TextFormField(
+                          key: const Key('nomeField'),
                           controller: _nomeController,
                           decoration: _inputDecoration(
                             'Digite seu nome completo*',
@@ -396,8 +430,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 14),
 
-                        // E-MAIL
                         TextFormField(
+                          key: const Key('emailField'),
                           controller: _emailController,
                           decoration: _inputDecoration('Digite seu e-mail*'),
                           keyboardType: TextInputType.emailAddress,
@@ -413,8 +447,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 14),
 
-                        // TELEFONE
                         TextFormField(
+                          key: const Key('telefoneField'),
                           controller: _telefoneController,
                           decoration: _inputDecoration('Digite seu telefone*'),
                           keyboardType: TextInputType.phone,
@@ -427,17 +461,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 14),
 
-                        // ESTADO (Dropdown obrigatório)
                         DropdownButtonFormField<String>(
+                          key: const Key('estadoField'),
                           value: _estadoSelecionado,
                           decoration: _inputDecoration('Estado*'),
                           items: estadosBrasil.map((uf) {
                             return DropdownMenuItem(value: uf, child: Text(uf));
                           }).toList(),
                           onChanged: (uf) {
-                            setState(() {
-                              _estadoSelecionado = uf;
-                            });
+                            setState(() => _estadoSelecionado = uf);
                           },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -448,7 +480,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 14),
 
-                        // CIDADE
                         TextFormField(
                           controller: _cidadeController,
                           decoration: _inputDecoration('Cidade*'),
@@ -461,7 +492,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 14),
 
-                        // BAIRRO
                         TextFormField(
                           controller: _bairroController,
                           decoration: _inputDecoration('Bairro*'),
@@ -475,6 +505,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         const SizedBox(height: 20),
 
                         ElevatedButton(
+                          key: const Key('salvarButton'),
                           onPressed: _salvarPerfil,
                           child: const Text(
                             'Salvar',
