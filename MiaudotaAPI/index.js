@@ -16,11 +16,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // permitir JSON no body
-app.use(express.json({ type: "*/*", limit: "5mb" }));
-app.use((req, res, next) => {
-  req.setEncoding("utf8");
-  next();
-});
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true }));
+
 
 // disponibiliza imagens no navegador
 app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
