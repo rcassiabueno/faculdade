@@ -7,6 +7,13 @@ import 'adoption_page.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
 import 'package:miaudota_app/theme/colors.dart';
 
+int? _parseUsuarioId(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is int) return raw;
+  if (raw is String) return int.tryParse(raw);
+  return null;
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -52,27 +59,25 @@ class _HomePageState extends State<HomePage> {
     try {
       final listaJson = await PetService.getPets();
 
-      final petsDaApi = listaJson.map<PetParaAdocao>((json) {
-        final foto = json['foto'] as String?;
-
+      final petsDaApi = listaJson.map<PetParaAdocao>((map) {
         return PetParaAdocao(
-          id: (json['id'] as num?)?.toInt(),
-          nome: json['nome'] ?? '',
-          descricao: json['descricao'] ?? '',
-          especie: json['especie'] ?? '',
-          tipo: json['especie'] ?? '', // 👈 usando especie como tipo
-          raca: json['raca'] ?? '',
-          idade: json['idade'] ?? '',
-          bairro: json['bairro'] ?? '',
-          cidade: json['cidade'] ?? '',
-          estado: json['estado'] ?? '',
-          imagemPath: (foto != null && foto.isNotEmpty)
-              ? '${PetService.baseUrl}$foto'
+          id: (map['id'] as num?)?.toInt(),
+          nome: map['nome'] ?? '',
+          descricao: map['descricao'] ?? '',
+          especie: map['especie'] ?? '',
+          tipo: map['especie'] ?? '',
+          raca: map['raca'] ?? '',
+          idade: map['idade'] ?? '',
+          bairro: map['bairro'] ?? '',
+          cidade: map['cidade'] ?? '',
+          estado: map['estado'] ?? '',
+          imagemPath:
+              (map['foto'] != null && (map['foto'] as String).isNotEmpty)
+              ? '${PetService.baseUrl}${map['foto']}'
               : 'assets/images/tom.png',
-          telefoneTutor: json['telefoneTutor'] ?? '',
-          usuarioId: json['usuario_id'] != null
-              ? (json['usuario_id'] as num).toInt()
-              : null,
+          telefoneTutor: map['telefoneTutor'] ?? '',
+          // 👇 aqui também converte
+          usuarioId: _parseUsuarioId(map['usuario_id']),
         );
       }).toList();
 

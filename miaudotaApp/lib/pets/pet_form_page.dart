@@ -6,10 +6,16 @@ import 'package:miaudota_app/main.dart';
 import 'package:miaudota_app/services/pet_service.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
-import 'package:miaudota_app/services/auth_service.dart';
-
 import 'package:miaudota_app/main.dart'
     show estadosBrasil, AppState, isUserProfileComplete, PetParaAdocao;
+import 'package:miaudota_app/services/auth_service.dart';
+
+int? _parseUsuarioId(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is int) return raw;
+  if (raw is String) return int.tryParse(raw);
+  return null;
+}
 
 class PetFormPage extends StatefulWidget {
   final PetParaAdocao? pet; // null = novo, != null = editar
@@ -187,20 +193,23 @@ class _PetFormPageState extends State<PetFormPage> {
         AppState.petsParaAdocao.add(
           PetParaAdocao(
             id: petJson['id'],
-            nome: petJson['nome'] ?? _nomeController.text.trim(),
-            tipo: petJson['tipo'] ?? 'Pet', // ou ajusta se não tiver tipo
-            especie: petJson['especie'] ?? _especieController.text.trim(),
-            raca: petJson['raca'] ?? _racaController.text.trim(),
-            idade: petJson['idade'] ?? _idadeController.text.trim(),
-            descricao: petJson['descricao'] ?? _descricaoController.text.trim(),
-            cidade: petJson['cidade'] ?? _cidadeController.text.trim(),
-            estado: petJson['estado'] ?? (_estadoSelecionado ?? ''),
-            bairro: petJson['bairro'] ?? _bairroController.text.trim(),
-            imagemPath: petJson['foto'] != null
+            nome: petJson['nome'],
+            especie: petJson['especie'],
+            tipo: petJson['especie'], // 👈 CORREÇÃO OBRIGATÓRIA AQUI
+            raca: petJson['raca'],
+            idade: petJson['idade'],
+            descricao: petJson['descricao'],
+            cidade: petJson['cidade'],
+            estado: petJson['estado'],
+            bairro: petJson['bairro'],
+
+            imagemPath: (petJson['foto'] != null)
                 ? '${PetService.baseUrl}${petJson['foto']}'
-                : _imagemController.text.trim(),
-            telefoneTutor: petJson['telefoneTutor'] ?? perfil.telefone,
-            usuarioId: petJson['usuario_id'] ?? userId, // 👈 AQUI
+                : 'assets/images/tom.png',
+
+            telefoneTutor: petJson['telefoneTutor'],
+
+            usuarioId: _parseUsuarioId(petJson['usuario_id']),
           ),
         );
       }
