@@ -60,6 +60,7 @@ export async function index(req, res) {
 // CRIAR PET
 export async function store(req, res) {
   try {
+    console.log('DEBUG STORE /pets V3 FOI CHAMADO');
     const {
       nome,
       especie,
