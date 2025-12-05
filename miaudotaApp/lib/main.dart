@@ -114,37 +114,39 @@ const List<String> estadosBrasil = [
 // ====================== PetParaAdocao (ÚNICA VERSÃO) ======================
 
 class PetParaAdocao {
-  final int? id; // id vindo da API (opcional)
-  final String nome;
-  final String descricao;
-  final String especie; // ex: Gato, Cachorro
-  final String raca; // ex: SRD, Siamês
-  final String idade; // ex: "15 dias", "2 anos"
-  final String cidade; // ex: Itajaí
-  final String estado; // ex: SC
-  final String bairro; // ex: Centro
-  final String imagemPath;
-  final String telefoneTutor;
+  int? id;
+  String nome;
+  String tipo; // já existe no seu modelo
+  String especie;
+  String raca;
+  String idade;
+  String descricao;
+  String cidade;
+  String estado;
+  String bairro;
+  String imagemPath;
+  String telefoneTutor;
 
-  bool aprovado; // usado na lógica de adoção
+  int? usuarioId; // 👈 NOVO: id do usuário dono do pet
 
   PetParaAdocao({
     this.id,
     required this.nome,
-    required this.descricao,
+    required this.tipo,
     required this.especie,
     required this.raca,
     required this.idade,
+    required this.descricao,
     required this.cidade,
     required this.estado,
     required this.bairro,
     required this.imagemPath,
     required this.telefoneTutor,
-    this.aprovado = false,
+    this.usuarioId, // 👈 novo
   });
 
-  String get tipo => '$especie $raca';
-  String get cidadeEstado => '$cidade – $estado';
+  //String get tipo => '$especie $raca';
+  //String get cidadeEstado => '$cidade – $estado';
 }
 
 // ====================== ESTADO GLOBAL ======================

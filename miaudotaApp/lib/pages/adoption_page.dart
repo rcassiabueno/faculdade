@@ -31,6 +31,65 @@ class _AdoptionPageState extends State<AdoptionPage> {
     _index = i == -1 ? 0 : i;
   }
 
+  void _criarSolicitacaoAdocao(PetParaAdocao pet) {
+    final perfil = AppState.userProfile;
+
+    final nomeInteressado = perfil.nome.trim().isNotEmpty
+        ? perfil.nome.trim()
+        : 'Tutor interessado';
+
+    final emailInteressado = perfil.email.trim().isNotEmpty
+        ? perfil.email.trim()
+        : 'sem-email@exemplo.com';
+
+    final telefoneInteressado = perfil.telefone.trim();
+
+    // Evita duplicar solicitação igual para o mesmo pet e mesma pessoa
+    final jaTemSolic = AppState.solicitacoesPendentes.any(
+      (s) =>
+          s.pet.nome == pet.nome &&
+          !s.aprovado &&
+          s.nomeInteressado == nomeInteressado &&
+          s.emailInteressado == emailInteressado &&
+          s.telefoneInteressado == telefoneInteressado,
+    );
+
+    if (!jaTemSolic) {
+      AppState.solicitacoesPendentes.add(
+        SolicitacaoAdocao(
+          pet: pet,
+          nomeInteressado: nomeInteressado,
+          emailInteressado: emailInteressado,
+          telefoneInteressado: telefoneInteressado,
+        ),
+      );
+    }
+
+    // Garante que apareça em "Pets que adotou"
+    final jaTemPetAdotado = AppState.petsAdotados.any(
+      (p) => p.nome == pet.nome,
+    );
+
+    if (!jaTemPetAdotado) {
+      AppState.petsAdotados.add(
+        PetAdotado(
+          nome: pet.nome,
+          tipo: pet.tipo, // ou pet.especie, se for assim na sua classe
+          aprovado: false,
+          reprovado: false,
+        ),
+      );
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Solicitação de adoção enviada! Aguarde a aprovação do tutor.',
+        ),
+      ),
+    );
+  }
+
   Widget _buildPetImage(String path) {
     const double imageHeight = 450;
 
@@ -121,14 +180,54 @@ class _AdoptionPageState extends State<AdoptionPage> {
 
                           const SizedBox(height: 8),
 
-                          // Descrição fixa (texto guia)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
+                          // Dados do pet (espécie, raça, idade, localização)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${pet.especie} • ${pet.raca}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF555555),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (pet.idade.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Idade: ${pet.idade}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF555555),
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Localização: ${pet.bairro}, ${pet.cidade} - ${pet.estado}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF555555),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Descrição do pet (se houver) ou texto guia
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Esse é um pet muito especial aguardando uma família cheia de amor. '
-                              'Entre em contato para saber mais detalhes sobre o histórico, cuidados '
-                              'e perfil ideal de tutor.',
-                              style: TextStyle(
+                              (pet.descricao.isNotEmpty)
+                                  ? pet.descricao
+                                  : 'Esse é um pet muito especial aguardando uma família cheia de amor. '
+                                        'Entre em contato para saber mais detalhes sobre o histórico, cuidados '
+                                        'e perfil ideal de tutor.',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF555555),
                               ),
@@ -137,36 +236,78 @@ class _AdoptionPageState extends State<AdoptionPage> {
 
                           const SizedBox(height: 16),
 
-                          // Botão de contato via WhatsApp
+                          // Botões: Cancelar + Quero adotar
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  abrirWhatsApp(
-                                    context,
-                                    numeroComDDD: pet.telefoneTutor,
-                                    mensagem:
-                                        'Olá! Tenho interesse em adotar o ${pet.nome}.',
-                                  );
-                                },
-                                icon: const FaIcon(FontAwesomeIcons.whatsapp),
-                                label: const Text(
-                                  'Quero adotar',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1D274A),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                            child: Row(
+                              children: [
+                                // Botão Cancelar
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFFCCCCCC),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      backgroundColor: const Color(0xFFF9F9F9),
+                                    ),
+                                    child: const Text(
+                                      'Cancelar',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Color(0xFF1D274A),
+                                      ),
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
+                                ),
+                                const SizedBox(width: 12),
+                                // Botão WhatsApp - Quero adotar
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      // 1) cria a solicitação e popula "Pets que adotou"
+                                      _criarSolicitacaoAdocao(pet);
+
+                                      // 2) mantém o comportamento de abrir o WhatsApp
+                                      abrirWhatsApp(
+                                        context,
+                                        numeroComDDD: pet.telefoneTutor,
+                                        mensagem:
+                                            'Olá! Tenho interesse em adotar o ${pet.nome}.',
+                                      );
+                                    },
+                                    icon: const FaIcon(
+                                      FontAwesomeIcons.whatsapp,
+                                      size: 18,
+                                    ),
+                                    label: const Text(
+                                      'Quero adotar',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1D274A),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
 

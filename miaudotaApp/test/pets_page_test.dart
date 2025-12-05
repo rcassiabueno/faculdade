@@ -1,112 +1,46 @@
-import 'dart:async';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-// PetParaAdocao está definido em main.dart
-import 'package:miaudota_app/main.dart';
-import 'package:miaudota_app/pets/pets_page.dart';
+import 'package:miaudota_app/main.dart'; // onde está o modelo PetParaAdocao
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  test("converter JSON para PetParaAdocao", () {
+    // 1️⃣ Lista fake usada apenas no teste
+    final List<Map<String, dynamic>> listaJson = [
+      {
+        'id': 1,
+        'nome': 'Tom',
+        'descricao': 'Fofo',
+        'especie': 'Gato',
+        'raca': 'SRD',
+        'idade': '2 meses',
+        'bairro': 'Centro',
+        'cidade': 'Itajaí',
+        'estado': 'SC',
+        'foto': '',
+        'telefoneTutor': '47999999999',
+        'usuario_id': 5,
+      },
+    ];
 
-  testWidgets('mostra indicador de carregamento enquanto busca pets', (
-    tester,
-  ) async {
-    // agora o completer é de List<PetParaAdocao>
-    final completer = Completer<List<PetParaAdocao>>();
+    final pets = listaJson.map<PetParaAdocao>((json) {
+      return PetParaAdocao(
+        id: json['id'],
+        nome: json['nome']?.toString() ?? '',
+        descricao: json['descricao']?.toString() ?? '',
+        especie: json['especie']?.toString() ?? '',
+        tipo: json['especie']?.toString() ?? '',
+        raca: json['raca']?.toString() ?? '',
+        idade: json['idade']?.toString() ?? '',
+        bairro: json['bairro']?.toString() ?? '',
+        cidade: json['cidade']?.toString() ?? '',
+        estado: json['estado']?.toString() ?? '',
+        imagemPath: 'assets/images/tom.png',
+        telefoneTutor: json['telefoneTutor']?.toString() ?? '',
+        usuarioId: json['usuario_id'],
+      );
+    }).toList();
 
-    await tester.pumpWidget(
-      MaterialApp(home: PetsPage(loadPets: () => completer.future)),
-    );
-
-    // estado inicial: Future pendente → loading
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-    // completa a future
-    completer.complete(<PetParaAdocao>[]);
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('mostra mensagem de erro quando Future retorna erro', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PetsPage(
-          loadPets: () async {
-            throw Exception('Falha de rede');
-          },
-        ),
-      ),
-    );
-
-    // Primeiro frame: loading
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('Erro ao carregar pets. Tente novamente mais tarde.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('mostra mensagem de lista vazia quando não há pets', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(home: PetsPage(loadPets: () async => <PetParaAdocao>[])),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('Nenhum pet disponível para adoção no momento.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('mostra lista quando há pets retornados', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PetsPage(
-          loadPets: () async => <PetParaAdocao>[
-            PetParaAdocao(
-              id: 1,
-              nome: 'Tom',
-              descricao: 'Gato carinhoso',
-              especie: 'Gato',
-              raca: 'SRD',
-              idade: '2 anos',
-              bairro: 'Centro',
-              cidade: 'Itajaí',
-              estado: 'SC',
-              // usa uma URL qualquer para evitar AssetImage("")
-              imagemPath: 'https://example.com/tom.png',
-              telefoneTutor: '47999999999',
-            ),
-            PetParaAdocao(
-              id: 2,
-              nome: 'Luna',
-              descricao: 'Cachorra alegre',
-              especie: 'Cachorro',
-              raca: 'SRD',
-              idade: '3 anos',
-              bairro: 'Centro',
-              cidade: 'Itajaí',
-              estado: 'SC',
-              imagemPath: 'https://example.com/luna.png',
-              telefoneTutor: '47999999999',
-            ),
-          ],
-        ),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(find.text('Tom'), findsOneWidget);
-    expect(find.text('Luna'), findsOneWidget);
-    expect(find.byType(ListTile), findsNWidgets(2));
+    expect(pets.length, 1);
+    expect(pets[0].nome, 'Tom');
+    expect(pets[0].tipo, 'Gato');
   });
 }

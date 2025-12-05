@@ -33,16 +33,21 @@ class _PetsPageState extends State<PetsPage> {
         nome: json['nome'] ?? '',
         descricao: json['descricao'] ?? '',
         especie: json['especie'] ?? '',
+        tipo: json['especie'] ?? '', // 👈 ADICIONE AQUI
+
         raca: json['raca'] ?? '',
         idade: json['idade'] ?? '',
         bairro: json['bairro'] ?? '',
         cidade: json['cidade'] ?? '',
         estado: json['estado'] ?? '',
+
         imagemPath:
             (json['foto'] != null && (json['foto'] as String).isNotEmpty)
             ? '${PetService.baseUrl}${json['foto']}'
             : 'assets/images/tom.png',
+
         telefoneTutor: json['telefoneTutor'] ?? '',
+        usuarioId: json['usuario_id'], // se tiver no modelo
       );
     }).toList();
   }

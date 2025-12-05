@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 
 import usersRoutes from "./src/routes/users.routes.js";
 import petsRoutes from "./src/routes/pets.routes.js";
-// import { transporter } from "./src/services/email.service.js";  // ❌ desativado enquanto email não usado
 
 dotenv.config();
 
@@ -19,7 +18,6 @@ const __dirname = path.dirname(__filename);
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-
 // disponibiliza imagens no navegador
 app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
 
@@ -27,24 +25,26 @@ app.use("/uploads", express.static(path.join(__dirname, "src", "uploads")));
 app.use("/users", usersRoutes);
 app.use("/pets", petsRoutes);
 
-// rota de teste (para abrir no navegador)
+// rota de teste
 app.get("/", (req, res) => {
   res.send("API Miaudota OK!");
 });
 
+// 🔴 middleware global de erro
+app.use((err, req, res, next) => {
+  console.error("ERRO GLOBAL:", err);
+  if (res.headersSent) return next(err);
+  return res.status(500).json({
+    error: err.message || "Erro interno no servidor",
+  });
+});
+
 // fallback 404
 app.use((req, res) => {
-  res.status(404).send("Rota não encontrada");
+  res.status(404).json({ error: "Rota não encontrada" });
 });
 
 // iniciar servidor
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
-
-/* 
-// Bloqueado temporariamente: SMTP não será usado
-transporter.verify()
-  .then(() => console.log('SMTP transporter verified and ready.'))
-  .catch((err) => console.error('SMTP transporter verification failed:', err));
-*/

@@ -188,6 +188,7 @@ class _PetFormPageState extends State<PetFormPage> {
           PetParaAdocao(
             id: petJson['id'],
             nome: petJson['nome'] ?? _nomeController.text.trim(),
+            tipo: petJson['tipo'] ?? 'Pet', // ou ajusta se não tiver tipo
             especie: petJson['especie'] ?? _especieController.text.trim(),
             raca: petJson['raca'] ?? _racaController.text.trim(),
             idade: petJson['idade'] ?? _idadeController.text.trim(),
@@ -199,6 +200,7 @@ class _PetFormPageState extends State<PetFormPage> {
                 ? '${PetService.baseUrl}${petJson['foto']}'
                 : _imagemController.text.trim(),
             telefoneTutor: petJson['telefoneTutor'] ?? perfil.telefone,
+            usuarioId: petJson['usuario_id'] ?? userId, // 👈 AQUI
           ),
         );
       }

@@ -52,21 +52,27 @@ class _HomePageState extends State<HomePage> {
     try {
       final listaJson = await PetService.getPets();
 
-      final petsDaApi = listaJson.map<PetParaAdocao>((map) {
+      final petsDaApi = listaJson.map<PetParaAdocao>((json) {
+        final foto = json['foto'] as String?;
+
         return PetParaAdocao(
-          id: (map['id'] as num).toInt(),
-          nome: map['nome'] ?? '',
-          descricao: map['descricao'] ?? '',
-          especie: map['especie'] ?? '',
-          raca: map['raca'] ?? '',
-          idade: map['idade'] ?? '',
-          bairro: map['bairro'] ?? '',
-          cidade: map['cidade'] ?? '',
-          estado: map['estado'] ?? '',
-          imagemPath: map['foto'] != null
-              ? '${PetService.baseUrl}${map['foto']}'
+          id: (json['id'] as num?)?.toInt(),
+          nome: json['nome'] ?? '',
+          descricao: json['descricao'] ?? '',
+          especie: json['especie'] ?? '',
+          tipo: json['especie'] ?? '', // 👈 usando especie como tipo
+          raca: json['raca'] ?? '',
+          idade: json['idade'] ?? '',
+          bairro: json['bairro'] ?? '',
+          cidade: json['cidade'] ?? '',
+          estado: json['estado'] ?? '',
+          imagemPath: (foto != null && foto.isNotEmpty)
+              ? '${PetService.baseUrl}$foto'
               : 'assets/images/tom.png',
-          telefoneTutor: map['telefoneTutor'] ?? '',
+          telefoneTutor: json['telefoneTutor'] ?? '',
+          usuarioId: json['usuario_id'] != null
+              ? (json['usuario_id'] as num).toInt()
+              : null,
         );
       }).toList();
 
@@ -109,9 +115,26 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _verificarSolicitacoesPendentes() {
-    if (AppState.solicitacoesPendentes.isEmpty) return;
+    // dono do pet = telefone salvo no perfil
+    final profile = AppState.userProfile;
+    final meuTelefone = profile.telefone.trim();
 
-    final solicitacao = AppState.solicitacoesPendentes.first;
+    if (meuTelefone.isEmpty) {
+      return; // sem telefone no perfil, não tem como saber quem é tutor
+    }
+
+    // só as solicitações dos meus pets
+    final minhasSolicitacoes = AppState.solicitacoesPendentes
+        .where(
+          (s) =>
+              s.pet.telefoneTutor.trim() == meuTelefone &&
+              !s.aprovado, // ainda não tratadas
+        )
+        .toList();
+
+    if (minhasSolicitacoes.isEmpty) return;
+
+    final solicitacao = minhasSolicitacoes.first;
 
     showDialog(
       context: context,
@@ -160,10 +183,12 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               solicitacao.aprovado = true;
 
+              // remove pet da lista de disponíveis
               AppState.petsParaAdocao.removeWhere(
                 (p) => p.nome == solicitacao.pet.nome,
               );
 
+              // marca como aprovado em petsAdotados (se já existir lá)
               for (final p in AppState.petsAdotados) {
                 if (p.nome == solicitacao.pet.nome) {
                   p.aprovado = true;

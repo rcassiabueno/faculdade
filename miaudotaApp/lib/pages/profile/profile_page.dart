@@ -154,6 +154,13 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final profile = AppState.userProfile;
 
+    // 🔒 Só mostra "meus pets para adoção": mesmo telefone do perfil
+    final meusPetsParaAdocao = AppState.petsParaAdocao.where((pet) {
+      final telefonePerfil = profile.telefone.trim();
+      if (telefonePerfil.isEmpty) return false;
+      return pet.telefoneTutor == telefonePerfil;
+    }).toList();
+
     return Scaffold(
       backgroundColor: lightBeige,
       body: SafeArea(
@@ -489,7 +496,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 8),
 
-                    if (AppState.petsParaAdocao.isEmpty)
+                    if (meusPetsParaAdocao.isEmpty)
                       const Text(
                         'Você ainda não adicionou nenhum pet para adoção.',
                         style: TextStyle(
@@ -499,7 +506,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       )
                     else
                       Column(
-                        children: AppState.petsParaAdocao.map((pet) {
+                        children: meusPetsParaAdocao.map((pet) {
                           final pendentesDoPet = AppState.solicitacoesPendentes
                               .where(
                                 (s) => s.pet.nome == pet.nome && !s.aprovado,
@@ -712,7 +719,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             (route) => false,
                           );
                         },
-
                         child: const Text(
                           'Sair da conta',
                           style: TextStyle(
