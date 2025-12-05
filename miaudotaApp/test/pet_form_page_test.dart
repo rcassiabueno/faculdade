@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:miaudota_app/main.dart';
+// Ajuste o caminho conforme sua estrutura real:
 import 'package:miaudota_app/pets/pet_form_page.dart';
 
 void main() {
@@ -27,7 +28,9 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: PetFormPage()));
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: PetFormPage())),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -42,6 +45,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.text('Complete seu cadastro antes de salvar um pet para adoção.'),
+        findsOneWidget,
+      );
     },
   );
 
@@ -103,13 +110,15 @@ void main() {
       await tester.tap(find.text('SC').last);
       await tester.pumpAndSettle();
 
-      // Não adiciona foto
+      // NÃO adiciona foto
+
       final salvarButton = find.widgetWithText(ElevatedButton, 'Salvar');
       await tester.ensureVisible(salvarButton);
       await tester.tap(salvarButton);
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Adicione uma foto do pet.'), findsOneWidget);
     },
   );
 }

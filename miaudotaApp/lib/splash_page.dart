@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
-import 'login_page.dart';
-import 'services/auth_service.dart';
+import 'package:miaudota_app/pages/home_page.dart';
+import 'package:miaudota_app/login_page.dart';
+import 'package:miaudota_app/services/auth_service.dart';
 import 'package:miaudota_app/main.dart';
 
 class SplashPage extends StatefulWidget {
@@ -16,18 +16,21 @@ class _SplashPageState extends State<SplashPage> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 1), () async {
-      final usuario = await AuthService.getUsuarioLogado();
+      final usuario = await AuthService.getUsuarioLocal();
 
       if (!mounted) return;
 
       if (usuario != null) {
+        // Atualiza estado global
         AppState.atualizarPerfilAPartirDoJson(usuario);
 
+        // Vai para Home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
         );
       } else {
+        // Vai para Login
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LoginPage()),

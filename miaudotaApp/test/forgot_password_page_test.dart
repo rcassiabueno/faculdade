@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+// ajuste o path conforme onde está o arquivo:
 import 'package:miaudota_app/forgot_password_page.dart';
 
 class TestNavigatorObserver extends NavigatorObserver {
@@ -13,7 +15,7 @@ class TestNavigatorObserver extends NavigatorObserver {
 }
 
 void main() {
-  testWidgets('ForgotPasswordPage - local reset success flow', (
+  testWidgets('ForgotPasswordPage - reset success flow', (
     WidgetTester tester,
   ) async {
     final observer = TestNavigatorObserver();
@@ -22,12 +24,14 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ForgotPasswordPage(
-          resetPasswordByCpfAction:
+          resetPasswordAction:
               ({
                 required String email,
-                required String cpf,
+                String? cpf,
+                String? cnpj,
                 required String novaSenha,
               }) async {
+                // aqui só marcamos que foi chamado
                 called = true;
               },
         ),
@@ -37,6 +41,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    // 4 TextFormField: e-mail, doc, nova senha, confirma
     final allTextFields = find.byType(TextFormField);
     expect(allTextFields, findsNWidgets(4));
 
@@ -58,11 +63,11 @@ void main() {
     // garante que a action foi chamada
     expect(called, isTrue);
 
-    // se a tela não dá pop no sucesso, não precisa checar didPopCalled
-    // então não vamos fazer assert de observer.didPopCalled aqui
+    // se quiser, dá pra checar se houve pop no sucesso:
+    // expect(observer.didPopCalled, isTrue);
   });
 
-  testWidgets('ForgotPasswordPage - local reset shows error', (
+  testWidgets('ForgotPasswordPage - reset shows error', (
     WidgetTester tester,
   ) async {
     final observer = TestNavigatorObserver();
@@ -70,10 +75,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ForgotPasswordPage(
-          resetPasswordByCpfAction:
+          resetPasswordAction:
               ({
                 required String email,
-                required String cpf,
+                String? cpf,
+                String? cnpj,
                 required String novaSenha,
               }) async {
                 await Future.delayed(const Duration(milliseconds: 10));
@@ -103,62 +109,28 @@ void main() {
     await tester.tap(buttonRedefinir);
     await tester.pumpAndSettle(const Duration(seconds: 1));
 
+    // deve mostrar SnackBar com a mensagem tratada
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('CPF não confere'), findsOneWidget);
+
+    // em caso de erro, não volta pra tela anterior
     expect(observer.didPopCalled, isFalse);
   });
 
   // ========================
-  // TESTES DO FLUXO POR E-MAIL (UI ANTIGA)
-  // Mantidos como referência, mas desativados para não quebrar,
-  // pois a tela atual não possui mais Switch nem botão "Enviar link".
+  // TESTES DO FLUXO POR E-MAIL (antigo)
+  // Mantidos como referência, mas desativados
   // ========================
 
-  testWidgets(
-    'ForgotPasswordPage - email link flow success',
-    (WidgetTester tester) async {
-      bool called = false;
+  testWidgets('ForgotPasswordPage - email link flow success (deprecated UI)', (
+    WidgetTester tester,
+  ) async {
+    expect(true, isTrue);
+  }, skip: true);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ForgotPasswordPage(
-            forgotPasswordAction: (email) async {
-              await Future.delayed(const Duration(milliseconds: 10));
-              called = true;
-            },
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Aqui antes havia um Switch e um botão "Enviar link",
-      // mas na UI atual esses elementos não existem mais.
-      // Test desativado.
-      expect(true, isTrue); // apenas para não ficar vazio
-    },
-    skip: true, // desativado porque a UI atual não tem mais esse fluxo
-  );
-
-  testWidgets(
-    'ForgotPasswordPage - email link shows error',
-    (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ForgotPasswordPage(
-            forgotPasswordAction: (email) async {
-              await Future.delayed(const Duration(milliseconds: 10));
-              throw Exception('Erro ao enviar e-mail');
-            },
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Situação: fluxo por e-mail não existe mais na tela atual.
-      expect(true, isTrue);
-    },
-    skip: true, // desativado
-  );
+  testWidgets('ForgotPasswordPage - email link shows error (deprecated UI)', (
+    WidgetTester tester,
+  ) async {
+    expect(true, isTrue);
+  }, skip: true);
 }

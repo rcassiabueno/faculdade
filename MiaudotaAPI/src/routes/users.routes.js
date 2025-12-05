@@ -3,20 +3,19 @@ import { Router } from "express";
 import {
   register,
   login,
-  forgotPassword,
-  resetPassword,
+  resetPassword,     // ✅ só esse para redefinir senha
   updateProfile,
-  deleteUser,   
-  resetPasswordByCpf,
+  deleteUser,
 } from "../controllers/users.controller.js";
 
 const router = Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.post("/forgot-password", forgotPassword);
+
+// fluxo novo de redefinição de senha (email + CPF/CNPJ + novaSenha)
 router.post("/reset-password", resetPassword);
-router.post("/reset-password/by-cpf", resetPasswordByCpf);
+
 router.put("/profile/:id", updateProfile);
 router.delete("/:id", deleteUser);
 

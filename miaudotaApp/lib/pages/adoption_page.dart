@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import 'package:miaudota_app/main.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
-import 'package:miaudota_app/theme/colors.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:miaudota_app/theme/colors.dart';
 
 class AdoptionPage extends StatefulWidget {
   final PetParaAdocao pet;
@@ -23,6 +23,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
   void initState() {
     super.initState();
 
+    // Descobre em qual posição da lista está o pet recebido
     final i = AppState.petsParaAdocao.indexWhere(
       (p) => p.nome == widget.pet.nome,
     );
@@ -30,65 +31,44 @@ class _AdoptionPageState extends State<AdoptionPage> {
     _index = i == -1 ? 0 : i;
   }
 
-  Widget _buildPetImage(PetParaAdocao pet) {
-    final path = pet.imagemPath;
+  Widget _buildPetImage(String path) {
+    const double imageHeight = 450;
+
+    if (path.isEmpty) {
+      return const SizedBox(
+        height: imageHeight,
+        child: Center(child: Text('Imagem não disponível')),
+      );
+    }
 
     // Se for URL (foto vindo da API)
     if (path.startsWith('http')) {
       return Image.network(
         path,
         fit: BoxFit.cover,
-        height: 450,
-        errorBuilder: (ctx, error, stack) =>
-            const Center(child: Text('Imagem indisponível')),
+        height: imageHeight,
+        errorBuilder: (ctx, error, stack) => const SizedBox(
+          height: imageHeight,
+          child: Center(child: Text('Imagem indisponível')),
+        ),
       );
     }
 
     // Se for arquivo local (galeria / armazenamento)
     if (path.startsWith('/') || path.contains('storage')) {
-      return Image.file(File(path), fit: BoxFit.cover, height: 450);
+      return Image.file(File(path), fit: BoxFit.cover, height: imageHeight);
     }
 
     // Caso contrário, assume que é asset
-    return Image.asset(path, fit: BoxFit.cover, height: 450);
-  }
-
-  Future<void> _abrirWhatsApp(
-    BuildContext context, {
-    required String numeroComDDD,
-    required String mensagem,
-  }) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final url = Uri.parse(
-      'https://wa.me/$numeroComDDD?text=${Uri.encodeComponent(mensagem)}',
-    );
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF1D274A),
-          content: const Text(
-            'Não foi possível abrir o WhatsApp. Tente novamente mais tarde.',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-    }
+    return Image.asset(path, fit: BoxFit.cover, height: imageHeight);
   }
 
   @override
   Widget build(BuildContext context) {
     if (AppState.petsParaAdocao.isEmpty) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: lightBeige,
-        body: const Center(
+        body: Center(
           child: Text('Nenhum pet disponível para adoção no momento.'),
         ),
       );
@@ -102,7 +82,6 @@ class _AdoptionPageState extends State<AdoptionPage> {
         child: Column(
           children: [
             const MiaudotaTopBar(titulo: 'Adoção', showBackButton: false),
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -122,7 +101,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(24),
                             ),
-                            child: _buildPetImage(pet),
+                            child: _buildPetImage(pet.imagemPath),
                           ),
 
                           const SizedBox(height: 12),
@@ -142,12 +121,13 @@ class _AdoptionPageState extends State<AdoptionPage> {
 
                           const SizedBox(height: 8),
 
-                          // Exemplo de descrição
+                          // Descrição fixa (texto guia)
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               'Esse é um pet muito especial aguardando uma família cheia de amor. '
-                              'Entre em contato para saber mais detalhes sobre o histórico, cuidados e perfil ideal de tutor.',
+                              'Entre em contato para saber mais detalhes sobre o histórico, cuidados '
+                              'e perfil ideal de tutor.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF555555),
@@ -164,7 +144,7 @@ class _AdoptionPageState extends State<AdoptionPage> {
                               width: double.infinity,
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  _abrirWhatsApp(
+                                  abrirWhatsApp(
                                     context,
                                     numeroComDDD: pet.telefoneTutor,
                                     mensagem:
@@ -213,7 +193,6 @@ class _AdoptionPageState extends State<AdoptionPage> {
           ],
         ),
       ),
-
       bottomNavigationBar: const MiaudotaBottomNav(currentIndex: 1),
     );
   }

@@ -16,43 +16,57 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _petIndex = 0;
-
-  // lista de pets exibidos na Home (já filtrados)
   List<PetParaAdocao> _petsFiltrados = [];
   bool _carregando = false;
 
-  // filtros atuais
   String? _filtroEspecie;
   String? _filtroRaca;
   String? _filtroCidade;
   String? _filtroEstado;
 
-  // controllers para os campos do popup de filtros
   final TextEditingController _filtroEspecieController =
       TextEditingController();
   final TextEditingController _filtroRacaController = TextEditingController();
   final TextEditingController _filtroCidadeController = TextEditingController();
 
-  Future<void> _carregarPetsDaApi() async {
-    setState(() {
-      _carregando = true;
+  @override
+  void initState() {
+    super.initState();
+    _carregarPetsDaApi();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _verificarSolicitacoesPendentes();
     });
+  }
+
+  @override
+  void dispose() {
+    _filtroEspecieController.dispose();
+    _filtroRacaController.dispose();
+    _filtroCidadeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _carregarPetsDaApi() async {
+    setState(() => _carregando = true);
 
     try {
-      final listaJson = await PetService.getPets(); // lista de maps (JSON)
+      final listaJson = await PetService.getPets();
 
-      final petsDaApi = listaJson.map<PetParaAdocao>((p) {
+      final petsDaApi = listaJson.map<PetParaAdocao>((map) {
         return PetParaAdocao(
-          nome: p['nome'] ?? '',
-          descricao: p['descricao'] ?? '',
-          especie: p['especie'] ?? '',
-          raca: p['raca'] ?? '',
-          idade: p['idade'] ?? '',
-          bairro: p['bairro'] ?? '',
-          cidade: p['cidade'] ?? '',
-          estado: p['estado'] ?? '',
-          imagemPath: p['foto'] ?? 'assets/images/tom.png',
-          telefoneTutor: p['telefoneTutor'] ?? '',
+          id: (map['id'] as num).toInt(),
+          nome: map['nome'] ?? '',
+          descricao: map['descricao'] ?? '',
+          especie: map['especie'] ?? '',
+          raca: map['raca'] ?? '',
+          idade: map['idade'] ?? '',
+          bairro: map['bairro'] ?? '',
+          cidade: map['cidade'] ?? '',
+          estado: map['estado'] ?? '',
+          imagemPath: map['foto'] != null
+              ? '${PetService.baseUrl}${map['foto']}'
+              : 'assets/images/tom.png',
+          telefoneTutor: map['telefoneTutor'] ?? '',
         );
       }).toList();
 
@@ -66,10 +80,7 @@ class _HomePageState extends State<HomePage> {
         _carregando = false;
       });
     } catch (e) {
-      setState(() {
-        _carregando = false;
-      });
-
+      setState(() => _carregando = false);
       SnackbarUtils.showError(context, 'Erro ao carregar pets da API: $e');
     }
   }
@@ -80,42 +91,21 @@ class _HomePageState extends State<HomePage> {
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-
-      // texto quando não focado
       labelStyle: const TextStyle(color: Color(0xFF777777), fontSize: 14),
-
-      // texto quando focado
       floatingLabelStyle: const TextStyle(
         color: primaryOrange,
         fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
-
-      // borda quando NÃO focado (cinza)
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
       ),
-
-      // borda quando focado (laranja)
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: primaryOrange, width: 1.6),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    // carrega os pets da API
-    _carregarPetsDaApi();
-
-    // popup de solicitação pendente
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _verificarSolicitacoesPendentes();
-    });
   }
 
   void _verificarSolicitacoesPendentes() {
@@ -170,12 +160,10 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               solicitacao.aprovado = true;
 
-              // remove da lista de para adoção
               AppState.petsParaAdocao.removeWhere(
                 (p) => p.nome == solicitacao.pet.nome,
               );
 
-              // marca como aprovado em "pets adotados"
               for (final p in AppState.petsAdotados) {
                 if (p.nome == solicitacao.pet.nome) {
                   p.aprovado = true;
@@ -222,12 +210,11 @@ class _HomePageState extends State<HomePage> {
         return matchEspecie && matchRaca && matchCidade && matchEstado;
       }).toList();
 
-      _petIndex = 0; // reinicia ao aplicar filtros
+      _petIndex = 0;
     });
   }
 
   void _abrirFiltros() {
-    // preenche com os valores atuais dos filtros
     _filtroEspecieController.text = _filtroEspecie ?? '';
     _filtroRacaController.text = _filtroRaca ?? '';
     _filtroCidadeController.text = _filtroCidade ?? '';
@@ -261,29 +248,21 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontSize: 11, color: Color(0xFF777777)),
                 ),
                 const SizedBox(height: 16),
-
-                // ESPÉCIE
                 TextFormField(
                   controller: _filtroEspecieController,
                   decoration: _filtroDecoration('Espécie (ex: Gato, Cachorro)'),
                 ),
                 const SizedBox(height: 12),
-
-                // RAÇA
                 TextFormField(
                   controller: _filtroRacaController,
                   decoration: _filtroDecoration('Raça (ex: SRD, Siamês)'),
                 ),
                 const SizedBox(height: 12),
-
-                // CIDADE
                 TextFormField(
                   controller: _filtroCidadeController,
                   decoration: _filtroDecoration('Cidade'),
                 ),
                 const SizedBox(height: 12),
-
-                // ESTADO
                 DropdownButtonFormField<String>(
                   value: _filtroEstado,
                   decoration: _filtroDecoration('Estado'),
@@ -291,9 +270,7 @@ class _HomePageState extends State<HomePage> {
                       .map((uf) => DropdownMenuItem(value: uf, child: Text(uf)))
                       .toList(),
                   onChanged: (value) {
-                    setState(() {
-                      _filtroEstado = value;
-                    });
+                    setState(() => _filtroEstado = value);
                   },
                 ),
               ],
@@ -303,7 +280,6 @@ class _HomePageState extends State<HomePage> {
           actions: [
             Row(
               children: [
-                // Botão LIMPAR (à esquerda)
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
@@ -311,17 +287,15 @@ class _HomePageState extends State<HomePage> {
                         _filtroEspecieController.clear();
                         _filtroRacaController.clear();
                         _filtroCidadeController.clear();
-
                         _filtroEspecie = '';
                         _filtroRaca = '';
                         _filtroCidade = '';
                         _filtroEstado = null;
-
                         _aplicarFiltros();
                       });
                       Navigator.pop(ctx);
                     },
-                    style: ElevatedButton.styleFrom(
+                    style: OutlinedButton.styleFrom(
                       backgroundColor: const Color(0xFFF9F9F9),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -332,7 +306,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Botão APLICAR (à direita)
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -359,18 +332,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  @override
-  void dispose() {
-    _filtroEspecieController.dispose();
-    _filtroRacaController.dispose();
-    _filtroCidadeController.dispose();
-    super.dispose();
-  }
-
   Widget _buildPetImage(PetParaAdocao pet) {
     final path = pet.imagemPath;
 
-    // Se for URL (começa com http)
     if (path.startsWith('http')) {
       return Image.network(
         path,
@@ -381,12 +345,10 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Se for arquivo local
     if (path.startsWith('/') || path.contains('storage')) {
       return Image.file(File(path), fit: BoxFit.cover, height: 450);
     }
 
-    // Caso contrário, é asset local
     return Image.asset(path, fit: BoxFit.cover, height: 450);
   }
 
@@ -399,8 +361,6 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Barra superior (não inseri o MiaudotaTopBar para poder
-            // customizar o conteúdo)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               color: const Color(0xFFFFE0B5),
@@ -437,8 +397,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-
-            // Conteúdo
             Expanded(
               child: _carregando
                   ? const Center(child: CircularProgressIndicator())
@@ -516,8 +474,6 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                       ),
                                       const SizedBox(height: 20),
-
-                                      // Botões
                                       Row(
                                         children: [
                                           Expanded(
@@ -601,7 +557,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            '1 de ${_petsFiltrados.length}',
+                            '${_petIndex + 1} de ${_petsFiltrados.length}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF777777),
@@ -614,7 +570,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-
       bottomNavigationBar: const MiaudotaBottomNav(currentIndex: 0),
     );
   }

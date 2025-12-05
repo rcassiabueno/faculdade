@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'splash_page.dart';
 import 'package:miaudota_app/theme/colors.dart';
 import 'package:miaudota_app/gateways/auth_gateway.dart';
+import 'package:miaudota_app/services/auth_service.dart';
+
+// ====================== MODELOS BÁSICOS ======================
 
 // Solicitação de adoção
 class SolicitacaoAdocao {
@@ -45,11 +49,16 @@ class UserProfile {
   });
 }
 
+// Verifica se o perfil está completo (agora considerando PF/PJ)
 bool isUserProfileComplete() {
   final p = AppState.userProfile;
 
+  final temDocumento = p.isPessoaJuridica
+      ? p.cnpj.trim().isNotEmpty
+      : p.cpf.trim().isNotEmpty;
+
   return p.nome.trim().isNotEmpty &&
-      p.cpf.trim().isNotEmpty &&
+      temDocumento &&
       p.email.trim().isNotEmpty &&
       p.telefone.trim().isNotEmpty &&
       p.estado.trim().isNotEmpty &&
@@ -102,66 +111,86 @@ const List<String> estadosBrasil = [
   'TO',
 ];
 
+// ====================== PetParaAdocao (ÚNICA VERSÃO) ======================
+
 class PetParaAdocao {
-  String nome;
-  String especie; // ex: Gato, Cachorro
-  String raca; // ex: SRD, Siamês
-  String idade; // ex: "15 dias", "2 anos"
-  String cidade; // ex: Itajaí
-  String estado; // ex: SC
-  String bairro; // ex: Centro
-  String descricao;
-  String imagemPath;
-  String telefoneTutor;
+  final int? id; // id vindo da API (opcional)
+  final String nome;
+  final String descricao;
+  final String especie; // ex: Gato, Cachorro
+  final String raca; // ex: SRD, Siamês
+  final String idade; // ex: "15 dias", "2 anos"
+  final String cidade; // ex: Itajaí
+  final String estado; // ex: SC
+  final String bairro; // ex: Centro
+  final String imagemPath;
+  final String telefoneTutor;
+
+  bool aprovado; // usado na lógica de adoção
 
   PetParaAdocao({
+    this.id,
     required this.nome,
+    required this.descricao,
     required this.especie,
     required this.raca,
     required this.idade,
     required this.cidade,
     required this.estado,
     required this.bairro,
-    required this.descricao,
     required this.imagemPath,
     required this.telefoneTutor,
+    this.aprovado = false,
   });
 
   String get tipo => '$especie $raca';
   String get cidadeEstado => '$cidade – $estado';
 }
 
-// Estado global do aplicativo (dados simulados)
+// ====================== ESTADO GLOBAL ======================
 
 class AppState {
   static UserProfile userProfile = UserProfile(
-    nome: 'Maria Silva',
-    cpf: '000.000.000-00',
-    email: 'maria@email.com.br',
-    telefone: '(47) 99999-9999',
-    estado: 'SC',
-    cidade: 'Itajaí',
-    bairro: 'Centro',
+    nome: '',
+    cpf: '',
+    cnpj: '',
+    isPessoaJuridica: false,
+    email: '',
+    telefone: '',
+    estado: '',
+    cidade: '',
+    bairro: '',
   );
 
   static final List<PetAdotado> petsAdotados = [];
   static final List<PetParaAdocao> petsParaAdocao = [];
   static final List<SolicitacaoAdocao> solicitacoesPendentes = [];
 
+  static AuthGateway? authGateway;
+
   static void atualizarPerfilAPartirDoJson(Map<String, dynamic> json) {
     userProfile = UserProfile(
-      nome: (json['nome'] ?? '').toString(),
-      cpf: (json['cpf'] ?? '').toString(),
-      email: (json['email'] ?? '').toString(),
-      telefone: (json['telefone'] ?? '').toString(),
-      estado: (json['estado'] ?? '').toString(),
-      cidade: (json['cidade'] ?? '').toString(),
-      bairro: (json['bairro'] ?? '').toString(),
+      nome: json['nome'] ?? '',
+      cpf: json['cpf'] ?? '',
+      cnpj: json['cnpj'] ?? '',
+      isPessoaJuridica: json['isPessoaJuridica'] ?? false,
+      email: json['email'] ?? '',
+      telefone: json['telefone'] ?? '',
+      estado: json['estado'] ?? '',
+      cidade: json['cidade'] ?? '',
+      bairro: json['bairro'] ?? '',
     );
   }
 
-  static AuthGateway? authGateway;
+  static Future<void> carregarUsuarioSalvo() async {
+    final usuario = await AuthService.getUsuarioLocal();
+    if (usuario != null) {
+      atualizarPerfilAPartirDoJson(usuario);
+    }
+  }
 }
+
+// ====================== HELPERS ======================
 
 String formatCidadeEstado({String? cidade, String? estado}) {
   final c = (cidade ?? '').trim();
@@ -172,11 +201,7 @@ String formatCidadeEstado({String? cidade, String? estado}) {
   }
   if (c.isEmpty) return e;
   if (e.isEmpty) return c;
-  return '$c – $e'; // ex.: Itajaí – SC
-}
-
-void main() {
-  runApp(const MiaudotaApp());
+  return '$c – $e';
 }
 
 Future<void> abrirWhatsApp(
@@ -197,7 +222,16 @@ Future<void> abrirWhatsApp(
   }
 }
 
-// APLICATIVO PRINCIPAL
+// ====================== MAIN / APP ======================
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await AppState.carregarUsuarioSalvo();
+
+  runApp(const MiaudotaApp());
+}
+
 class MiaudotaApp extends StatelessWidget {
   const MiaudotaApp({super.key});
 
@@ -234,34 +268,23 @@ class MiaudotaApp extends StatelessWidget {
             horizontal: 16,
             vertical: 14,
           ),
-
-          // LABEL cinza sempre que NÃO estiver focado
           labelStyle: const TextStyle(color: Color(0xFF777777), fontSize: 14),
-
-          // BORDA cinza (campo normal, focado ou não, desde que sem erro)
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: Color(0xFFDCDCDC), width: 1),
           ),
-
-          // BORDA laranja (campo focado)
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: primaryOrange, width: 1.6),
           ),
-
-          // BORDA vermelha (erro)
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: Colors.red, width: 1.5),
           ),
-
-          // BORDA vermelha focada (erro + foco)
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: Colors.red, width: 1.6),
           ),
-
           errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
         ),
       ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 🔹 Ajuste os paths abaixo conforme sua estrutura:
-import 'pages/home_page.dart';
-import 'login_page.dart';
+// IMPORTS CORRIGIDOS
+import 'package:miaudota_app/pages/home_page.dart';
+import 'package:miaudota_app/login_page.dart';
 
 class SplashRouter extends StatelessWidget {
   const SplashRouter({super.key});
@@ -25,11 +25,9 @@ class SplashRouter extends StatelessWidget {
           );
         }
 
-        if (!snapshot.hasData || snapshot.data == false) {
-          return const LoginPage();
-        }
+        final hasToken = snapshot.data ?? false;
 
-        return const HomePage();
+        return hasToken ? const HomePage() : const LoginPage();
       },
     );
   }

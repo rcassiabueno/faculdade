@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:miaudota_app/theme/colors.dart';
 import 'package:miaudota_app/main.dart';
-import 'package:miaudota_app/pages/profile/edit_profile_page.dart';
 import 'package:miaudota_app/services/pet_service.dart';
 import 'package:miaudota_app/components/miaudota_bottom_nav.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
@@ -111,9 +110,30 @@ class _PetFormPageState extends State<PetFormPage> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    if (_imagemSelecionada == null) {
+    final isEdit = widget.pet != null;
+
+    final imagemPath = _imagemController.text.trim();
+    final temFotoAntiga = imagemPath.isNotEmpty;
+    final temFotoNovaArquivo = _imagemSelecionada != null;
+    final bool isLink =
+        imagemPath.startsWith('http://') || imagemPath.startsWith('https://');
+
+    // Novo pet: exige foto por arquivo OU link
+    if (!isEdit && !temFotoNovaArquivo && !temFotoAntiga) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Adicione uma foto do pet.")),
+        const SnackBar(
+          content: Text("Adicione uma foto do pet (arquivo ou link)."),
+        ),
+      );
+      return;
+    }
+
+    // Editar pet: exige foto só se não tiver nem antiga nem nova
+    if (isEdit && !temFotoNovaArquivo && !temFotoAntiga) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Adicione uma foto do pet (arquivo ou link)."),
+        ),
       );
       return;
     }
@@ -121,42 +141,69 @@ class _PetFormPageState extends State<PetFormPage> {
     final perfil = AppState.userProfile;
 
     try {
-      // pega o id como String
       final userIdStr = await AuthService.getUserId();
-      // tenta converter pra int (se não conseguir, vira null)
       final userId = userIdStr != null ? int.tryParse(userIdStr) : null;
 
-      final petJson = await PetService.createPet(
-        nome: _nomeController.text.trim(),
-        especie: _especieController.text.trim(),
-        raca: _racaController.text.trim(),
-        idade: _idadeController.text.trim(),
-        descricao: _descricaoController.text.trim(),
-        cidade: _cidadeController.text.trim(),
-        estado: _estadoSelecionado ?? '',
-        bairro: _bairroController.text.trim(),
-        telefoneTutor: perfil.telefone,
-        fotoFile: File(_imagemSelecionada!.path),
-        usuarioId: userId,
-      );
+      Map<String, dynamic> petJson;
+
+      if (isEdit && widget.pet?.id != null) {
+        // 🔁 ATUALIZAR (vou deixar igual por enquanto, usando só fotoFile)
+        petJson = await PetService.updatePet(
+          id: widget.pet!.id!,
+          nome: _nomeController.text.trim(),
+          especie: _especieController.text.trim(),
+          raca: _racaController.text.trim(),
+          idade: _idadeController.text.trim(),
+          descricao: _descricaoController.text.trim(),
+          cidade: _cidadeController.text.trim(),
+          estado: _estadoSelecionado ?? '',
+          bairro: _bairroController.text.trim(),
+          telefoneTutor: perfil.telefone,
+          fotoFile: _imagemSelecionada != null
+              ? File(_imagemSelecionada!.path)
+              : null,
+        );
+
+        // ... (resto igual)
+      } else {
+        // ✨ CRIAR
+        petJson = await PetService.createPet(
+          nome: _nomeController.text.trim(),
+          especie: _especieController.text.trim(),
+          raca: _racaController.text.trim(),
+          idade: _idadeController.text.trim(),
+          descricao: _descricaoController.text.trim(),
+          cidade: _cidadeController.text.trim(),
+          estado: _estadoSelecionado ?? '',
+          bairro: _bairroController.text.trim(),
+          telefoneTutor: perfil.telefone,
+          fotoFile: (!isLink && _imagemSelecionada != null)
+              ? File(_imagemSelecionada!.path)
+              : null,
+          fotoUrl: isLink ? imagemPath : null, // 👈 NOVO
+          usuarioId: userId,
+        );
+
+        AppState.petsParaAdocao.add(
+          PetParaAdocao(
+            id: petJson['id'],
+            nome: petJson['nome'] ?? _nomeController.text.trim(),
+            especie: petJson['especie'] ?? _especieController.text.trim(),
+            raca: petJson['raca'] ?? _racaController.text.trim(),
+            idade: petJson['idade'] ?? _idadeController.text.trim(),
+            descricao: petJson['descricao'] ?? _descricaoController.text.trim(),
+            cidade: petJson['cidade'] ?? _cidadeController.text.trim(),
+            estado: petJson['estado'] ?? (_estadoSelecionado ?? ''),
+            bairro: petJson['bairro'] ?? _bairroController.text.trim(),
+            imagemPath: petJson['foto'] != null
+                ? '${PetService.baseUrl}${petJson['foto']}'
+                : _imagemController.text.trim(),
+            telefoneTutor: petJson['telefoneTutor'] ?? perfil.telefone,
+          ),
+        );
+      }
 
       if (!mounted) return;
-
-      AppState.petsParaAdocao.add(
-        PetParaAdocao(
-          nome: petJson['nome'],
-          especie: petJson['especie'],
-          raca: petJson['raca'],
-          idade: petJson['idade'] ?? '',
-          descricao: petJson['descricao'],
-          cidade: petJson['cidade'],
-          estado: petJson['estado'],
-          bairro: petJson['bairro'],
-          imagemPath: '${PetService.baseUrl}${petJson['foto'] ?? ''}',
-          telefoneTutor: petJson['telefoneTutor'] ?? '',
-        ),
-      );
-
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -247,7 +294,23 @@ class _PetFormPageState extends State<PetFormPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-
+                        // ⬇️ NOVO: campo para link da foto
+                        TextFormField(
+                          controller: _imagemController,
+                          keyboardType: TextInputType.url,
+                          decoration: _inputDecoration(
+                            'Link da foto (opcional)',
+                          ),
+                          onChanged: (value) {
+                            // se a pessoa digitar link, limpamos a imagem escolhida da galeria
+                            if (value.trim().isNotEmpty) {
+                              setState(() {
+                                _imagemSelecionada = null;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         // NOME
                         TextFormField(
                           controller: _nomeController,
@@ -455,15 +518,28 @@ class _PetFormPageState extends State<PetFormPage> {
 
     final path = _imagemController.text.trim();
 
-    // 2) Se tem caminho preenchido que NÃO é asset → tenta abrir como arquivo
-    if (path.isNotEmpty && !path.startsWith('assets/')) {
+    // 2) Se tem algo preenchido no campo de imagem/link
+    if (path.isNotEmpty) {
+      final isLinkHttp =
+          path.startsWith('http://') || path.startsWith('https://');
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Image.file(
-          File(path),
-          fit: BoxFit.cover,
-          width: double.infinity,
-        ),
+        child: isLinkHttp
+            ? Image.network(
+                path,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Text(
+                      'Não foi possível carregar a imagem.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
+                    ),
+                  );
+                },
+              )
+            : Image.file(File(path), fit: BoxFit.cover, width: double.infinity),
       );
     }
 

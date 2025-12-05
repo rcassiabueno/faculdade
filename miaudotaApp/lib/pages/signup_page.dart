@@ -12,10 +12,12 @@ import 'package:miaudota_app/components/miaudota_top_bar.dart';
 class SignupPage extends StatefulWidget {
   final Future<void> Function({
     required String nome,
-    required String cpf,
     required String email,
     required String telefone,
     required String senha,
+    String? cpf,
+    String? cnpj,
+    required bool isPessoaJuridica,
   })
   signupAction;
 
@@ -134,9 +136,12 @@ class _SignupPageState extends State<SignupPage> {
   Future<void> _criarConta() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // CPF sem máscara (se PF)
     final cpfDigits = !_isPessoaJuridica
         ? _cpfMaskFormatter.getUnmaskedText()
         : '';
+
+    // CNPJ sem máscara (se PJ)
     final cnpjDigits = _isPessoaJuridica
         ? _cnpjMaskFormatter.getUnmaskedText()
         : '';
@@ -149,14 +154,15 @@ class _SignupPageState extends State<SignupPage> {
     try {
       await widget.signupAction(
         nome: _nomeController.text.trim(),
-        cpf: cpfDigits.isNotEmpty ? cpfDigits : cnpjDigits,
         email: _emailController.text.trim(),
         telefone: _telefoneController.text.trim(),
         senha: _senhaController.text.trim(),
+        cpf: !_isPessoaJuridica ? cpfDigits : null,
+        cnpj: _isPessoaJuridica ? cnpjDigits : null,
+        isPessoaJuridica: _isPessoaJuridica,
       );
     } catch (e) {
       erro = true;
-
       if (mounted) {
         SnackbarUtils.showError(
           context,

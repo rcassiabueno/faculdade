@@ -1,37 +1,25 @@
 import 'package:flutter/material.dart';
-
-import '../../theme/colors.dart';
-import '../services/auth_service.dart';
-import '../../utils/snackbar_utils.dart';
-import '../../utils/global_loader.dart';
+import 'package:miaudota_app/theme/colors.dart';
+import 'package:miaudota_app/services/auth_service.dart';
+import 'package:miaudota_app/utils/global_loader.dart';
+import 'package:miaudota_app/utils/snackbar_utils.dart';
 import 'package:miaudota_app/components/miaudota_top_bar.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
-/// Tela de "Esqueci minha senha"
-///
-/// Atualmente suporta apenas o fluxo de redefinição **local**:
-/// - Usuário informa e-mail, CPF, nova senha e confirmação.
-/// - O app chama `resetPasswordByCpfAction` (por padrão, `AuthService.resetPasswordByCpf`).
-///
-/// Observação:
-/// - A funcionalidade de envio de link por e-mail foi desativada.
-/// - A propriedade [forgotPasswordAction] é mantida apenas por compatibilidade,
-///   mas não é utilizada nesta UI.
 class ForgotPasswordPage extends StatefulWidget {
-  /// Mantido por compatibilidade, mas não é usado na UI atual.
-  final Future<void> Function(String) forgotPasswordAction;
-
-  /// Ação utilizada para redefinir a senha localmente usando e-mail + CPF.
+  /// Permite injetar uma função fake/mocada nos testes.
+  /// No app normal, usa AuthService.resetPassword.
   final Future<void> Function({
     required String email,
-    required String cpf,
+    String? cpf,
+    String? cnpj,
     required String novaSenha,
   })
-  resetPasswordByCpfAction;
+  resetPasswordAction;
 
   const ForgotPasswordPage({
     super.key,
-    this.forgotPasswordAction = AuthService.forgotPassword,
-    this.resetPasswordByCpfAction = AuthService.resetPasswordByCpf,
+    this.resetPasswordAction = AuthService.resetPassword,
   });
 
   @override
@@ -41,26 +29,94 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Campos da tela
   final _emailController = TextEditingController();
-  final _cpfController = TextEditingController();
+  final _docController = TextEditingController();
   final _novaSenhaController = TextEditingController();
-  final _confirmSenhaController = TextEditingController();
+  final _confirmaSenhaController = TextEditingController();
 
-  // Indica se há requisição em andamento (evita duplo clique)
-  bool _enviando = false;
+  bool _carregando = false;
+  bool _obscurePassword = true;
+  bool _obscurePasswordConfirm = true;
 
-  Color _labelColor(Set<MaterialState> states) {
-    if (states.contains(MaterialState.focused)) {
-      return primaryOrange; // focado → laranja
+  bool _isPessoaJuridica = false;
+
+  final _cpfMaskFormatter = MaskTextInputFormatter(
+    mask: '###.###.###-##',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+
+  final _cnpjMaskFormatter = MaskTextInputFormatter(
+    mask: '##.###.###/####-##',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _docController.dispose();
+    _novaSenhaController.dispose();
+    _confirmaSenhaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _redefinirSenha() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _carregando = true);
+    GlobalLoader.show(context);
+
+    try {
+      // pega só os dígitos do documento
+      final docDigits = _docController.text.replaceAll(RegExp(r'\D'), '');
+
+      String? cpf;
+      String? cnpj;
+
+      if (_isPessoaJuridica) {
+        cnpj = docDigits;
+      } else {
+        cpf = docDigits;
+      }
+
+      await widget.resetPasswordAction(
+        email: _emailController.text.trim(),
+        cpf: cpf,
+        cnpj: cnpj,
+        novaSenha: _novaSenhaController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      SnackbarUtils.showSuccess(
+        context,
+        'Senha redefinida com sucesso. Agora faça login com a nova senha.',
+      );
+
+      Navigator.pop(context); // volta pra tela de login
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          e.toString().replaceFirst('Exception:', '').trim(),
+        );
+      }
+    } finally {
+      GlobalLoader.hide();
+      if (mounted) setState(() => _carregando = false);
     }
-    return const Color(0xFF777777); // sem foco → cinza
+  }
+
+  Color _labelColor(Set<WidgetState> states) {
+    if (states.contains(WidgetState.focused)) {
+      return primaryOrange;
+    }
+    return const Color(0xFF777777);
   }
 
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      floatingLabelStyle: MaterialStateTextStyle.resolveWith(
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
         (states) => TextStyle(
           color: _labelColor(states),
           fontSize: 14,
@@ -71,61 +127,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   @override
-  void dispose() {
-    _emailController.dispose();
-    _cpfController.dispose();
-    _novaSenhaController.dispose();
-    _confirmSenhaController.dispose();
-    super.dispose();
-  }
-
-  /// Centraliza a lógica da redefinição local de senha:
-  /// - valida o formulário
-  /// - mostra loader
-  /// - chama [resetPasswordByCpfAction]
-  /// - exibe snackbar de sucesso ou erro
-  Future<void> _redefinirSenha() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    FocusScope.of(context).unfocus();
-
-    setState(() => _enviando = true);
-    GlobalLoader.show(context);
-
-    try {
-      final novaSenha = _novaSenhaController.text.trim();
-      final confirmSenha = _confirmSenhaController.text.trim();
-
-      if (novaSenha.length < 6) {
-        throw Exception('A senha deve ter no mínimo 6 caracteres');
-      }
-      if (novaSenha != confirmSenha) {
-        throw Exception('As senhas não coincidem');
-      }
-
-      await widget.resetPasswordByCpfAction(
-        email: _emailController.text.trim(),
-        cpf: _cpfController.text.trim(),
-        novaSenha: novaSenha,
-      );
-
-      SnackbarUtils.showSuccess(context, 'Senha redefinida com sucesso');
-      await Future.delayed(const Duration(milliseconds: 600));
-
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      SnackbarUtils.showError(
-        context,
-        e.toString().replaceFirst('Exception:', '').trim(),
-      );
-    } finally {
-      GlobalLoader.hide();
-      if (mounted) setState(() => _enviando = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final docLabel = _isPessoaJuridica ? 'Digite seu CNPJ*' : 'Digite seu CPF*';
+
     return Scaffold(
       backgroundColor: lightBeige,
       body: SafeArea(
@@ -136,112 +140,190 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               showBackButton: true,
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Esqueceu a senha?',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'PoetsenOne',
-                          fontSize: 18,
-                          color: primaryOrange,
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Informe seu e-mail, documento (CPF ou CNPJ) e a nova senha para redefinir o acesso.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF777777),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Digite seu e-mail, CPF e a nova senha para redefinir sua senha aqui mesmo no aplicativo.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF777777),
+                        const SizedBox(height: 16),
+
+                        // Seleção PF / PJ
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Pessoa física'),
+                              selected: !_isPessoaJuridica,
+                              selectedColor: primaryOrange,
+                              backgroundColor: const Color(0xFFE7EBF7),
+                              labelStyle: TextStyle(
+                                color: !_isPessoaJuridica
+                                    ? Colors.white
+                                    : const Color(0xFF1D274A),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  _isPessoaJuridica = false;
+                                  _docController.clear();
+                                });
+                              },
+                            ),
+                            ChoiceChip(
+                              label: const Text('Pessoa jurídica'),
+                              selected: _isPessoaJuridica,
+                              selectedColor: primaryOrange,
+                              backgroundColor: const Color(0xFFE7EBF7),
+                              labelStyle: TextStyle(
+                                color: _isPessoaJuridica
+                                    ? Colors.white
+                                    : const Color(0xFF1D274A),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  _isPessoaJuridica = true;
+                                  _docController.clear();
+                                });
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 24),
 
-                      // E-mail
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        decoration: _fieldDecoration('Digite seu e-mail*'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Informe seu e-mail';
-                          }
-                          final email = value.trim();
-                          final regex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-                          if (!regex.hasMatch(email)) {
-                            return 'Informe um e-mail válido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 20),
 
-                      // CPF
-                      TextFormField(
-                        controller: _cpfController,
-                        keyboardType: TextInputType.number,
-                        decoration: _fieldDecoration('CPF*'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Informe seu CPF';
-                          }
-                          if (value.replaceAll(RegExp(r'\D'), '').length < 11) {
-                            return 'CPF inválido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                        // E-MAIL
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: _fieldDecoration('Digite seu e-mail*'),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Informe seu e-mail';
+                            }
+                            if (!v.contains('@')) {
+                              return 'Informe um e-mail válido';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
 
-                      // Nova senha
-                      TextFormField(
-                        controller: _novaSenhaController,
-                        obscureText: true,
-                        decoration: _fieldDecoration('Nova senha*'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Informe a nova senha';
-                          }
-                          if (value.length < 6) {
-                            return 'Senha muito curta (mínimo 6 caracteres)';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                        // CPF ou CNPJ
+                        TextFormField(
+                          controller: _docController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            _isPessoaJuridica
+                                ? _cnpjMaskFormatter
+                                : _cpfMaskFormatter,
+                          ],
+                          decoration: _fieldDecoration(docLabel),
+                          validator: (v) {
+                            final digits =
+                                v?.replaceAll(RegExp(r'\D'), '') ?? '';
+                            if (digits.isEmpty) {
+                              return _isPessoaJuridica
+                                  ? 'Informe seu CNPJ'
+                                  : 'Informe seu CPF';
+                            }
+                            if (!_isPessoaJuridica && digits.length != 11) {
+                              return 'CPF incompleto';
+                            }
+                            if (_isPessoaJuridica && digits.length != 14) {
+                              return 'CNPJ incompleto';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
 
-                      // Confirmar senha
-                      TextFormField(
-                        controller: _confirmSenhaController,
-                        obscureText: true,
-                        decoration: _fieldDecoration('Confirmar senha*'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Confirme a senha';
-                          }
-                          if (value != _novaSenhaController.text) {
-                            return 'As senhas não coincidem';
-                          }
-                          return null;
-                        },
-                      ),
+                        // NOVA SENHA
+                        TextFormField(
+                          controller: _novaSenhaController,
+                          obscureText: _obscurePassword,
+                          decoration: _fieldDecoration('Nova senha*').copyWith(
+                            suffixIcon: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              child: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: const Color(0xFF777777),
+                              ),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Informe a nova senha';
+                            }
+                            if (v.length < 6) {
+                              return 'A senha deve ter no mínimo 6 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
 
-                      const SizedBox(height: 24),
+                        // CONFIRMAR SENHA
+                        TextFormField(
+                          controller: _confirmaSenhaController,
+                          obscureText: _obscurePasswordConfirm,
+                          decoration: _fieldDecoration('Confirme a nova senha*')
+                              .copyWith(
+                                suffixIcon: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _obscurePasswordConfirm =
+                                          !_obscurePasswordConfirm;
+                                    });
+                                  },
+                                  child: Icon(
+                                    _obscurePasswordConfirm
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: const Color(0xFF777777),
+                                  ),
+                                ),
+                              ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Confirme a nova senha';
+                            }
+                            if (v != _novaSenhaController.text) {
+                              return 'As senhas não coincidem';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
 
-                      // Botão "Redefinir senha"
-                      SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _enviando ? null : _redefinirSenha,
-                          child: _enviando
+                        ElevatedButton(
+                          onPressed: _carregando ? null : _redefinirSenha,
+                          child: _carregando
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
@@ -259,8 +341,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   ),
                                 ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

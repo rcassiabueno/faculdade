@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'forgot_password_page.dart';
-import 'pages/home_page.dart';
-import 'services/auth_service.dart';
-import '../../theme/colors.dart';
-import 'pages/signup_page.dart';
-import 'pages/terms_page.dart';
-import '../../utils/snackbar_utils.dart';
-import '../../utils/global_loader.dart';
+import 'package:miaudota_app/forgot_password_page.dart';
+import 'package:miaudota_app/pages/home_page.dart';
+import 'package:miaudota_app/services/auth_service.dart';
+import 'package:miaudota_app/theme/colors.dart';
+import 'package:miaudota_app/pages/signup_page.dart';
+import 'package:miaudota_app/pages/terms_page.dart';
+import 'package:miaudota_app/utils/snackbar_utils.dart';
+import 'package:miaudota_app/utils/global_loader.dart';
 
 class LoginPage extends StatefulWidget {
   final Future<void> Function(String email, String senha) loginAction;
@@ -22,15 +22,15 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
 
+  bool _carregando = false;
+  bool _obscurePassword = true;
+
   @override
   void dispose() {
     _emailController.dispose();
     _senhaController.dispose();
     super.dispose();
   }
-
-  bool _carregando = false;
-  bool _obscurePassword = true;
 
   Future<void> _entrar() async {
     if (!_formKey.currentState!.validate()) return;
@@ -44,18 +44,23 @@ class _LoginPageState extends State<LoginPage> {
         _senhaController.text.trim(),
       );
 
+      if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomePage()),
       );
     } catch (e) {
+      if (!mounted) return;
       SnackbarUtils.showError(
         context,
         e.toString().replaceFirst('Exception:', '').trim(),
       );
     } finally {
       GlobalLoader.hide();
-      if (mounted) setState(() => _carregando = false);
+      if (mounted) {
+        setState(() => _carregando = false);
+      }
     }
   }
 
@@ -69,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      floatingLabelStyle: MaterialStateTextStyle.resolveWith(
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
         (states) => TextStyle(
           color: _labelColor(states),
           fontSize: 14,
@@ -95,6 +100,7 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Logo
                   Column(
                     children: [
                       Image.asset('assets/images/logo.png', width: 160),
@@ -102,6 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
+
                   const Align(
                     alignment: Alignment.center,
                     child: Text(
@@ -137,6 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                   TextFormField(
                     controller: _senhaController,
                     obscureText: _obscurePassword,
+                    keyboardType: TextInputType.visiblePassword,
                     decoration: _fieldDecoration('Digite sua senha*').copyWith(
                       suffixIcon: GestureDetector(
                         onTap: () {
@@ -164,6 +172,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
+                  // BOTÃO ENTRAR
                   ElevatedButton(
                     onPressed: _carregando ? null : _entrar,
                     child: _carregando
@@ -214,11 +223,12 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 22),
 
+                  // CRIAR NOVA CONTA
                   OutlinedButton(
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => SignupPage()),
+                        MaterialPageRoute(builder: (_) => const SignupPage()),
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -239,6 +249,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
 
                   const SizedBox(height: 12),
+
+                  // TERMOS
                   TextButton(
                     style: TextButton.styleFrom(alignment: Alignment.center),
                     onPressed: () {

@@ -6,11 +6,13 @@ import 'package:miaudota_app/pages/signup_page.dart';
 
 class MockSignup extends Mock {
   Future<void> call({
-    required String nome,
-    required String cpf,
+    String? cnpj,
+    String? cpf,
     required String email,
-    required String telefone,
+    required bool isPessoaJuridica,
+    required String nome,
     required String senha,
+    required String telefone,
   });
 }
 
@@ -24,11 +26,13 @@ void main() {
 
     when(
       () => mockSignup(
-        nome: any(named: 'nome'),
+        cnpj: any(named: 'cnpj'),
         cpf: any(named: 'cpf'),
         email: any(named: 'email'),
-        telefone: any(named: 'telefone'),
+        isPessoaJuridica: any(named: 'isPessoaJuridica'),
+        nome: any(named: 'nome'),
         senha: any(named: 'senha'),
+        telefone: any(named: 'telefone'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -39,18 +43,22 @@ void main() {
         home: SignupPage(
           signupAction:
               ({
-                required String nome,
-                required String cpf,
+                String? cnpj,
+                String? cpf,
                 required String email,
-                required String telefone,
+                required bool isPessoaJuridica,
+                required String nome,
                 required String senha,
+                required String telefone,
               }) {
                 return mockSignup(
-                  nome: nome,
+                  cnpj: cnpj,
                   cpf: cpf,
                   email: email,
-                  telefone: telefone,
+                  isPessoaJuridica: isPessoaJuridica,
+                  nome: nome,
                   senha: senha,
+                  telefone: telefone,
                 );
               },
         ),
@@ -70,7 +78,7 @@ void main() {
     await tester.tap(criarContaButton);
     await tester.pumpAndSettle();
 
-    // Verifica se as mensagens de erro aparecem
+    // Verifica se as mensagens de erro aparecem (ajusta depois se quiser checar textos específicos)
     expect(find.byType(Scaffold), findsOneWidget);
   });
 
@@ -80,10 +88,12 @@ void main() {
     final fields = find.byType(TextFormField);
     expect(fields, findsWidgets);
 
+    // Ajusta os índices conforme a ordem real dos campos na sua SignupPage
     await tester.enterText(fields.at(0), 'Maria Teste'); // nome
     await tester.enterText(fields.at(1), 'maria@teste.com'); // email
     await tester.enterText(fields.at(2), 'SenhaSegura123'); // senha
     await tester.enterText(fields.at(3), 'SenhaSegura123'); // confirmar senha
+
     await tester.pumpAndSettle();
 
     // Botão de criar conta
@@ -92,7 +102,8 @@ void main() {
     await tester.tap(criarContaButton);
     await tester.pumpAndSettle();
 
-    // Verifica se a action foi chamada
+    // Aqui só garante que a tela continua montada;
+    // se quiser depois a gente adiciona um verify(mockSignup(...)).called(1)
     expect(find.byType(Scaffold), findsOneWidget);
   });
 }

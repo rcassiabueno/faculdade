@@ -4,32 +4,34 @@ class GlobalLoader {
   static OverlayEntry? _currentLoader;
 
   static void show(BuildContext context) {
+    // Se já tiver loader na tela, não cria outro
     if (_currentLoader != null) return;
+
+    final overlay = Overlay.of(context, rootOverlay: true);
 
     _currentLoader = OverlayEntry(
       builder: (_) => Stack(
         children: [
-          // Fundo escuro
           ModalBarrier(
             dismissible: false,
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
           ),
-          // Loader no centro
           const Center(child: _LogoCircleLoader()),
         ],
       ),
     );
 
-    Overlay.of(context, rootOverlay: true).insert(_currentLoader!);
+    overlay.insert(_currentLoader!);
   }
 
   static void hide() {
-    _currentLoader?.remove();
-    _currentLoader = null;
+    if (_currentLoader != null) {
+      _currentLoader!.remove();
+      _currentLoader = null;
+    }
   }
 }
 
-/// Widget com o círculo + logo no centro
 class _LogoCircleLoader extends StatelessWidget {
   const _LogoCircleLoader();
 

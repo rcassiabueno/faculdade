@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+// PetParaAdocao está definido em main.dart
+import 'package:miaudota_app/main.dart';
 import 'package:miaudota_app/pets/pets_page.dart';
 
 void main() {
@@ -11,7 +13,8 @@ void main() {
   testWidgets('mostra indicador de carregamento enquanto busca pets', (
     tester,
   ) async {
-    final completer = Completer<List<dynamic>>();
+    // agora o completer é de List<PetParaAdocao>
+    final completer = Completer<List<PetParaAdocao>>();
 
     await tester.pumpWidget(
       MaterialApp(home: PetsPage(loadPets: () => completer.future)),
@@ -21,7 +24,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     // completa a future
-    completer.complete([]);
+    completer.complete(<PetParaAdocao>[]);
     await tester.pumpAndSettle();
   });
 
@@ -52,7 +55,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(home: PetsPage(loadPets: () async => [])),
+      MaterialApp(home: PetsPage(loadPets: () async => <PetParaAdocao>[])),
     );
 
     await tester.pumpAndSettle();
@@ -67,9 +70,34 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: PetsPage(
-          loadPets: () async => [
-            {'nome': 'Tom', 'descricao': 'Gato carinhoso', 'foto': ''},
-            {'nome': 'Luna', 'descricao': 'Cachorra alegre', 'foto': ''},
+          loadPets: () async => <PetParaAdocao>[
+            PetParaAdocao(
+              id: 1,
+              nome: 'Tom',
+              descricao: 'Gato carinhoso',
+              especie: 'Gato',
+              raca: 'SRD',
+              idade: '2 anos',
+              bairro: 'Centro',
+              cidade: 'Itajaí',
+              estado: 'SC',
+              // usa uma URL qualquer para evitar AssetImage("")
+              imagemPath: 'https://example.com/tom.png',
+              telefoneTutor: '47999999999',
+            ),
+            PetParaAdocao(
+              id: 2,
+              nome: 'Luna',
+              descricao: 'Cachorra alegre',
+              especie: 'Cachorro',
+              raca: 'SRD',
+              idade: '3 anos',
+              bairro: 'Centro',
+              cidade: 'Itajaí',
+              estado: 'SC',
+              imagemPath: 'https://example.com/luna.png',
+              telefoneTutor: '47999999999',
+            ),
           ],
         ),
       ),

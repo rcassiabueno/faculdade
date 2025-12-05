@@ -1,24 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+// Ajuste o caminho conforme sua estrutura:
 import 'package:miaudota_app/login_page.dart';
 import 'package:miaudota_app/pages/home_page.dart';
 
 class TestNavigatorObserver extends NavigatorObserver {
-  bool popped = false;
   bool pushed = false;
-  Route? lastRoute;
 
   @override
   void didPush(Route route, Route? previousRoute) {
     pushed = true;
-    lastRoute = route;
     super.didPush(route, previousRoute);
-  }
-
-  @override
-  void didPop(Route route, Route? previousRoute) {
-    popped = true;
-    super.didPop(route, previousRoute);
   }
 }
 
@@ -43,18 +36,21 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    // Preenche campos
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'user@example.com',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'senha123');
 
+    // Toca no botão
     await tester.tap(find.widgetWithText(ElevatedButton, 'Entrar'));
-    await tester.pump();
-
     await tester.pump(const Duration(milliseconds: 200));
+
+    // Verifica se chamou loginAction
     expect(called, isTrue);
 
+    // Verifica se navegação ocorreu
     expect(observer.pushed, isTrue);
   });
 
@@ -82,14 +78,16 @@ void main() {
       'user@example.com',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'senhaErrada');
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Entrar'));
-    await tester.pump();
 
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Entrar'));
+
     await tester.pumpAndSettle(const Duration(seconds: 1));
 
+    // Snackbar apareceu
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Usuário ou senha inválidos'), findsOneWidget);
+
+    // Garante que NÃO abriu HomePage
     expect(find.byType(HomePage), findsNothing);
   });
 }

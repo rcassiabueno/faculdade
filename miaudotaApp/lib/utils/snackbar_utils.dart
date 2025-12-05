@@ -10,29 +10,31 @@ class SnackbarUtils {
   }
 
   static void showInfo(BuildContext context, String message) {
-    _show(
-      context,
-      message,
-      const Color(0xFF243B58),
-    ); // azul info (igual do Miaudota)
+    _show(context, message, const Color(0xFF243B58)); // azul info (Miaudota)
   }
 
   static void _show(BuildContext context, String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.clearSnackBars(); // evita empilhar vários snackbars
+
+    messenger.showSnackBar(
       SnackBar(
         content: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, color: Colors.white),
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
-        elevation: 10,
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(30)),
-        ),
-        duration: const Duration(seconds: 3),
+        elevation: 8,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        duration: const Duration(milliseconds: 2400),
       ),
     );
   }

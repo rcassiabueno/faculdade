@@ -1,71 +1,110 @@
 import { db } from "../database/database.js";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
-//import { transporter } from "../services/email.service.js"; inserir posteriormente quando usar email.
 
 // POST /users/register
 export const register = (req, res) => {
   console.log("📦 Body recebido no /users/register:", req.body);
 
-  let { nome, email, senha, cpf, telefone } = req.body;
+  let { nome, email, senha, cpf, cnpj, telefone, isPessoaJuridica } = req.body;
 
-  // campos obrigatórios
-  if (!nome || !email || !senha || !cpf) {
+  // campos obrigatórios base
+  if (!nome || !email || !senha) {
     return res.status(400).json({
-      error: "nome, email, senha e cpf são obrigatórios",
+      error: "nome, email e senha são obrigatórios",
     });
   }
 
-  // deixa só os dígitos no CPF
-  cpf = cpf.replace(/\D/g, "");
+  // descobre se é PJ
+  const isPJ = isPessoaJuridica === true || isPessoaJuridica === "true";
+
+  // valida documento conforme o tipo
+  if (isPJ) {
+    if (!cnpj) {
+      return res
+        .status(400)
+        .json({ error: "CNPJ é obrigatório para pessoa jurídica" });
+    }
+  } else {
+    if (!cpf) {
+      return res
+        .status(400)
+        .json({ error: "CPF é obrigatório para pessoa física" });
+    }
+  }
+
+  // normaliza documentos (só dígitos)
+  if (cpf) cpf = cpf.replace(/\D/g, "");
+  if (cnpj) cnpj = cnpj.replace(/\D/g, "");
 
   const senhaHash = bcrypt.hashSync(senha, 10);
 
   const sql = `
-    INSERT INTO usuarios (nome, cpf, email, telefone, senha_hash)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO usuarios (
+      nome,
+      cpf,
+      cnpj,
+      is_pessoa_juridica,
+      email,
+      telefone,
+      senha_hash
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.run(sql, [nome, cpf, email, telefone || "", senhaHash], function (err) {
-    if (err) {
-      console.error("❌ Erro ao registrar usuário:", err);
+  db.run(
+    sql,
+    [
+      nome,
+      cpf || null,
+      cnpj || null,
+      isPJ ? 1 : 0,
+      email,
+      telefone || "",
+      senhaHash,
+    ],
+    function (err) {
+      if (err) {
+        console.error("❌ Erro ao registrar usuário:", err);
 
-      // Tratamento para CPF/e-mail duplicados
-      if (err.code === "SQLITE_CONSTRAINT") {
-        if (err.message.includes("usuarios.cpf")) {
+        if (err.code === "SQLITE_CONSTRAINT") {
+          if (err.message.includes("usuarios.cpf")) {
+            return res.status(400).json({
+              error: "CPF já cadastrado. Tente outro.",
+            });
+          }
+          if (err.message.includes("usuarios.email")) {
+            return res.status(400).json({
+              error: "E-mail já cadastrado. Tente outro.",
+            });
+          }
+
           return res.status(400).json({
-            error: "CPF já cadastrado. Tente outro.",
+            error: "Dados inválidos para cadastro.",
           });
         }
-        if (err.message.includes("usuarios.email")) {
-          return res.status(400).json({
-            error: "E-mail já cadastrado. Tente outro.",
-          });
-        }
 
-        return res.status(400).json({
-          error: "Dados inválidos para cadastro.",
+        return res.status(500).json({
+          error: "Erro ao registrar usuário",
+          detalhes: err.message,
         });
       }
 
-      return res.status(500).json({
-        error: "Erro ao registrar usuário",
-        detalhes: err.message,
+      return res.status(201).json({
+        message: "Usuário registrado com sucesso!",
+        usuario: {
+          id: this.lastID,
+          nome,
+          cpf,
+          cnpj,
+          isPessoaJuridica: isPJ,
+          email,
+          telefone,
+        },
       });
     }
-
-    return res.status(201).json({
-      message: "Usuário registrado com sucesso!",
-      usuario: {
-        id: this.lastID,
-        nome,
-        cpf,
-        email,
-        telefone,
-      },
-    });
-  });
+  );
 };
+
 
 
 export const login = (req, res) => {
@@ -80,7 +119,8 @@ export const login = (req, res) => {
   }
 
   const sql = `
-    SELECT * FROM usuarios
+    SELECT *
+    FROM usuarios
     WHERE email = ?
     LIMIT 1
   `;
@@ -101,67 +141,96 @@ export const login = (req, res) => {
       return res.status(401).json({ error: "Usuário ou senha inválidos" });
     }
 
+    // monta no formato que o app espera
+    const usuarioResposta = {
+      id: usuario.id,
+      nome: usuario.nome,
+      cpf: usuario.cpf,
+      cnpj: usuario.cnpj,
+      isPessoaJuridica: !!usuario.is_pessoa_juridica,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      estado: usuario.estado,
+      cidade: usuario.cidade,
+      bairro: usuario.bairro,
+    };
+
     return res.json({
       message: "Login bem-sucedido",
-      usuario: {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-      },
+      usuario: usuarioResposta,
+      // token: '...' se um dia você usar JWT
     });
   });
 };
 
 
-export const forgotPassword = (req, res) => {
-  const { email } = req.body;
+// POST /users/reset-password
+// Redefine a senha usando email + CPF ou CNPJ + novaSenha
+export const resetPassword = (req, res) => {
+  let { email, cpf, cnpj, novaSenha } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ error: "E-mail é obrigatório" });
+  if (!email || !novaSenha) {
+    return res
+      .status(400)
+      .json({ error: "email e novaSenha são obrigatórios" });
   }
 
-  // Funcionalidade de recuperação de senha por e-mail desativada nesta versão.
-  // Mantemos a rota apenas para não quebrar chamadas antigas, mas ela não
-  // envia mais e-mail nem gera token.
+  if (!cpf && !cnpj) {
+    return res
+      .status(400)
+      .json({ error: "Informe CPF ou CNPJ para redefinir a senha." });
+  }
 
-  return res.status(503).json({
-    error:
-      "Recuperação de senha via e-mail está desativada nesta versão. Use a redefinição de senha pelo CPF no aplicativo.",
-  });
-};
+  // normaliza documentos
+  if (cpf) cpf = cpf.replace(/\D/g, "");
+  if (cnpj) cnpj = cnpj.replace(/\D/g, "");
 
+  const documento = cpf || cnpj;
+  const colunaDocumento = cpf ? "cpf" : "cnpj";
 
-export const resetPassword = (req, res) => {
-  const { token, novaSenha } = req.body;
-  if (!token || !novaSenha)
-    return res.status(400).json({ error: "token e novaSenha são obrigatórios" });
-
-  const sql = `
-    SELECT * FROM password_reset_tokens
-    WHERE token = ?
-    LIMIT 1
+  const sqlSelect = `
+    SELECT *
+      FROM usuarios
+     WHERE email = ?
+       AND ${colunaDocumento} = ?
+     LIMIT 1
   `;
 
-  db.get(sql, [token], (err, tokenRow) => {
-    if (err) return res.status(500).json({ error: "Erro interno" });
-    if (!tokenRow) return res.status(400).json({ error: "Token inválido" });
-    if (Date.now() > tokenRow.expires_at)
-      return res.status(400).json({ error: "Token expirado" });
+  db.get(sqlSelect, [email, documento], (err, usuario) => {
+    if (err) {
+      console.error("❌ Erro ao buscar usuário para reset de senha:", err);
+      return res.status(500).json({ error: "Erro interno ao buscar usuário" });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({
+        error: "Nenhum usuário encontrado com esse e-mail e documento.",
+      });
+    }
 
     const senhaHash = bcrypt.hashSync(novaSenha, 10);
 
-    const sqlUpdate = `UPDATE usuarios SET senha_hash = ? WHERE id = ?`;
+    const sqlUpdate = `
+      UPDATE usuarios
+         SET senha_hash = ?
+       WHERE id = ?
+    `;
 
-    db.run(sqlUpdate, [senhaHash, tokenRow.usuario_id], err => {
-      if (err) return res.status(500).json({ error: "Erro ao redefinir senha" });
-
-      db.run(`DELETE FROM password_reset_tokens WHERE id = ?`, [tokenRow.id]);
+    db.run(sqlUpdate, [senhaHash, usuario.id], function (err2) {
+      if (err2) {
+        console.error("❌ Erro ao atualizar senha:", err2);
+        return res
+          .status(500)
+          .json({ error: "Erro ao atualizar senha", detalhes: err2.message });
+      }
 
       return res.json({ message: "Senha redefinida com sucesso!" });
     });
   });
 };
 
+
+// PUT /users/profile/:id
 
 export const updateProfile = (req, res) => {
   const { id } = req.params;

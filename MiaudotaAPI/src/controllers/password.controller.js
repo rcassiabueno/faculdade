@@ -1,71 +1,52 @@
-// Função desativada no momento.
-
-
-import crypto from "crypto";
-import { db } from "../database/database.js";
 import bcrypt from "bcrypt";
-import { transporter } from "../services/email.service.js";
+import { db } from "../database/database.js";
 
+// AGORA sem e-mail nem token. Só CPF/CNPJ + e-mail + novaSenha.
+export const resetPassword = (req, res) => {
+  const { email, cpf, cnpj, novaSenha } = req.body;
 
-// 1) Usuário solicita redefinição
-export const requestResetPassword = (req, res) => {
-  const { email } = req.body;
+  // validações básicas
+  if (!email || !novaSenha) {
+    return res.status(400).json({
+      error: "E-mail e nova senha são obrigatórios.",
+    });
+  }
 
-  const token = crypto.randomBytes(32).toString("hex");
-  const expires = Date.now() + 1000 * 60 * 30; // expira em 30 min
+  if (!cpf && !cnpj) {
+    return res.status(400).json({
+      error: "Informe CPF ou CNPJ.",
+    });
+  }
+
+  const documento = cpf || cnpj;
+  const colunaDocumento = cpf ? "cpf" : "cnpj";
+
+  const senhaHash = bcrypt.hashSync(novaSenha, 10);
 
   db.run(
-    `UPDATE usuarios SET reset_token = ?, reset_expires = ? WHERE email = ?`,
-    [token, expires, email],
-    async function (err) {
-      if (err) return res.status(500).json({ error: "Erro no servidor" });
-      if (this.changes === 0)
-        return res.status(200).json({
-          message: "Se o e-mail estiver cadastrado, enviaremos o link.",
-        });
-
-      const resetLink = `${process.env.APP_URL}/reset-password?token=${token}`;
-
-      try {
-        await transporter.sendMail({
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          to: email,
-          subject: "Redefinição de senha - Miaudota",
-          html: `
-            <p>Você pediu para redefinir sua senha.</p>
-            <p>Clique no link abaixo para continuar:</p>
-            <a href="${resetLink}">${resetLink}</a>
-            <p>O link expira em 30 minutos.</p>
-          `,
-        });
-      } catch (err) {
-        console.error('❌ Erro ao enviar e-mail de redefinição (password.controller):', err.message || err);
-        return res.status(500).json({ error: 'Erro ao enviar e-mail de redefinição' });
+    `
+      UPDATE usuarios
+         SET senha_hash = ?,
+             reset_token = NULL,
+             reset_expires = NULL
+       WHERE email = ?
+         AND ${colunaDocumento} = ?
+    `,
+    [senhaHash, email, documento],
+    function (err) {
+      if (err) {
+        console.error("Erro ao atualizar senha:", err);
+        return res.status(500).json({ error: "Erro no servidor" });
       }
 
-      return res.status(200).json({
-        message: "Se o e-mail estiver cadastrado, enviaremos o link.",
-      });
-    }
-  );
-};
-
-
-// 2) Usuário redefine senha
-export const resetPassword = (req, res) => {
-  const { token, senha } = req.body;
-  const senhaHash = bcrypt.hashSync(senha, 10);
-
-  db.run(
-    `UPDATE usuarios SET senha_hash = ?, reset_token = NULL, reset_expires = NULL
-     WHERE reset_token = ? AND reset_expires > ?`,
-    [senhaHash, token, Date.now()],
-    function (err) {
-      if (err) return res.status(500).json({ error: "Erro no servidor" });
-      if (this.changes === 0)
-        return res.status(400).json({ error: "Link inválido ou expirado" });
+      if (this.changes === 0) {
+        return res.status(400).json({
+          error: "Nenhum usuário encontrado com esse e-mail e documento.",
+        });
+      }
 
       return res.json({ message: "Senha atualizada com sucesso!" });
     }
   );
 };
+

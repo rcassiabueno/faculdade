@@ -16,7 +16,7 @@ export const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 db.serialize(() => {
-  // USUÁRIOS (já alinhado com seu users.controller e EditProfilePage)
+  // Tabela de usuários
   db.run(
     `
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -39,70 +39,94 @@ db.serialize(() => {
     }
   );
 
-  // ENDEREÇOS (opcional – só use se for realmente utilizar endereço separado)
+  // Endereços (opcional)
   db.run(
     `
     CREATE TABLE IF NOT EXISTS enderecos (
-      id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      estado  TEXT NOT NULL,
-      cidade  TEXT NOT NULL,
-      bairro  TEXT NOT NULL
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      estado TEXT NOT NULL,
+      cidade TEXT NOT NULL,
+      bairro TEXT NOT NULL
     );
   `,
     (err) => {
-      if (err)
-        console.error("Erro ao criar tabela enderecos:", err.message);
+      if (err) console.error("Erro ao criar tabela enderecos:", err.message);
       else console.log("Tabela enderecos pronta para uso");
     }
   );
 
-  // PETS – ESSA É A CHAVE PRO createPet FUNCIONAR
+  // Pets
   db.run(
     `
     CREATE TABLE IF NOT EXISTS pets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome          TEXT NOT NULL,
-      especie       TEXT NOT NULL,
-      raca          TEXT NOT NULL,
-      idade         TEXT,
-      descricao     TEXT NOT NULL,
-      cidade        TEXT NOT NULL,
-      estado        TEXT NOT NULL,
-      bairro        TEXT NOT NULL,
-      foto          TEXT,             -- caminho/URL da imagem
+      nome TEXT NOT NULL,
+      especie TEXT NOT NULL,
+      raca TEXT NOT NULL,
+      idade TEXT,
+      descricao TEXT NOT NULL,
+      cidade TEXT NOT NULL,
+      estado TEXT NOT NULL,
+      bairro TEXT NOT NULL,
+      foto TEXT,
       telefoneTutor TEXT,
-      usuario_id    INTEGER,
+      usuario_id INTEGER,
       FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     );
   `,
     (err) => {
-      if (err) {
-        console.error("Erro ao criar tabela pets:", err.message);
-      } else {
-        console.log("Tabela pets pronta para uso");
-      }
+      if (err) console.error("Erro ao criar tabela pets:", err.message);
+      else console.log("Tabela pets pronta para uso");
     }
   );
 
-  // TOKENS DE REDEFINIÇÃO DE SENHA
-  db.run(
-    `
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      usuario_id INTEGER NOT NULL,
-      token TEXT NOT NULL,
-      expires_at INTEGER NOT NULL,
-      FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
-    );
-  `,
-    (err) => {
-      if (err)
-        console.error(
-          "Erro ao criar tabela password_reset_tokens:",
-          err.message
-        );
-      else console.log("Tabela password_reset_tokens pronta para uso");
+  // ================================
+  //   INSERIR PETS INICIAIS SE VAZIO
+  // ================================
+  db.get("SELECT COUNT(*) AS total FROM pets", (err, row) => {
+    if (err) {
+      console.error("Erro ao verificar pets:", err.message);
+      return;
     }
-  );
+
+    if (row.total === 0) {
+      console.log("Inserindo pets iniciais...");
+
+      const insert = db.prepare(`
+        INSERT INTO pets
+        (nome, especie, raca, idade, descricao, cidade, estado, bairro, foto, telefoneTutor)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      insert.run(
+        "Tom",
+        "Gato",
+        "SDR",
+        "40 dias",
+        "Super brincalhão, curioso e adora explorar cada cantinho. Está em busca de uma família carinhosa e responsável para dar muito amor e atenção!",
+        "Itajaí",
+        "SC",
+        "Itaipava",
+        "tom.png",
+        "47999157777"
+      );
+
+      insert.run(
+        "Jane",
+        "Cachorro",
+        "SDR",
+        "1 ano",
+        "Ela é a definição de companheira leal, sempre pronta para uma aventura, seja uma longa caminhada no parque ou uma sessão de brincadeiras no quintal.",
+        "Itajaí",
+        "SC",
+        "Itaipava",
+        "jane.png",
+        "47999157777"
+      );
+
+      insert.finalize(() => {
+        console.log("Pets iniciais inseridos com sucesso!");
+      });
+    }
+  });
 });
-

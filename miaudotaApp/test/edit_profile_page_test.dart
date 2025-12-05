@@ -37,7 +37,7 @@ void main() {
 
     when(
       () => auth.updateProfile(
-        userId: any<String>(named: 'userId'),
+        userId: any(named: 'userId'),
         nome: any(named: 'nome'),
         cpf: any(named: 'cpf'),
         telefone: any(named: 'telefone'),
@@ -54,54 +54,30 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: EditProfilePage(
-          getUserIdAction: () => auth.getUserId(),
-          updateProfileAction:
-              ({
-                required String userId,
-                required String nome,
-                required String cpf,
-                required String telefone,
-                required String cidade,
-                required String estado,
-                required String bairro,
-                String? cnpj,
-                bool isPessoaJuridica = false,
-              }) {
-                return auth.updateProfile(
-                  userId: userId,
-                  nome: nome,
-                  cpf: cpf,
-                  telefone: telefone,
-                  cidade: cidade,
-                  estado: estado,
-                  bairro: bairro,
-                  cnpj: cnpj,
-                  isPessoaJuridica: isPessoaJuridica,
-                );
-              },
-          deleteAccountAction: (id) => auth.deleteAccount(id),
-          logoutAction: () => auth.logout(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: EditProfilePage()));
     await tester.pumpAndSettle();
   }
 
   testWidgets('preenche campos com dados do perfil atual', (tester) async {
     await pumpPage(tester);
 
-    expect(find.byKey(const Key('nomeField')), findsOneWidget);
-    expect(find.byKey(const Key('cpfField')), findsOneWidget);
-    expect(find.byKey(const Key('emailField')), findsOneWidget);
-    expect(find.byKey(const Key('estadoField')), findsOneWidget);
+    final nomeField = find.byKey(const Key('nomeField'));
+    final cpfField = find.byKey(const Key('cpfField'));
+    final emailField = find.byKey(const Key('emailField'));
+    final estadoField = find.byKey(const Key('estadoField'));
+
+    expect(nomeField, findsOneWidget);
+    expect(cpfField, findsOneWidget);
+    expect(emailField, findsOneWidget);
+    expect(estadoField, findsOneWidget);
 
     expect(find.text('Maria Silva'), findsOneWidget);
-    expect(find.text('11122233344'), findsOneWidget);
     expect(find.text('f@x.com'), findsOneWidget);
     expect(find.text('SP'), findsOneWidget);
+
+    // Se quiser validar o valor bruto do CPF via controller:
+    final cpfTextField = tester.widget<TextFormField>(cpfField);
+    expect(cpfTextField.controller?.text, '11122233344');
   });
 
   testWidgets('mostra erro se tentar salvar com CPF vazio', (tester) async {
@@ -119,7 +95,7 @@ void main() {
 
     verifyNever(
       () => auth.updateProfile(
-        userId: any<String>(named: 'userId'),
+        userId: any(named: 'userId'),
         nome: any(named: 'nome'),
         cpf: any(named: 'cpf'),
         telefone: any(named: 'telefone'),
