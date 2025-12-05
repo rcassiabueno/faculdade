@@ -58,7 +58,6 @@ export async function index(req, res) {
 }
 
 // CRIAR PET
-// CRIAR PET
 export async function store(req, res) {
   try {
     const {
@@ -72,12 +71,13 @@ export async function store(req, res) {
       bairro,
       telefoneTutor,
       usuario_id,
-      foto_url, // se vier do Flutter
+      foto_url, // 👈 pode vir do Flutter como link
     } = req.body;
 
     // PRIORIDADE:
-    // 1) arquivo uploadado
-    // 2) link enviado
+    // 1) se veio arquivo -> usa upload
+    // 2) senão, se veio link -> usa link
+    // 3) senão, null
     let fotoPath = null;
 
     if (req.file) {
@@ -109,17 +109,17 @@ export async function store(req, res) {
       fotoPath,
     ];
 
-    console.log('DEBUG /pets - params:', params); // 👈 log útil
+    console.log('DEBUG /pets - params:', params); // 👈 log pra ver o que está indo pro banco
 
     db.run(sql, params, function (err) {
       if (err) {
         console.error('ERRO SQLITE AO CADASTRAR PET:', err);
-        // 👇 devolve a mensagem real pro Flutter
         return res.status(500).json({
           error: err.message || 'Erro ao cadastrar pet',
         });
       }
 
+      // this.lastID = id gerado
       return res.status(201).json({
         id: this.lastID,
         nome,
@@ -142,7 +142,6 @@ export async function store(req, res) {
     });
   }
 }
-
 
 // ATUALIZAR PET
 export async function update(req, res) {
@@ -169,16 +168,16 @@ export async function update(req, res) {
         estado,
         bairro,
         telefoneTutor,
+        foto_url, // 👈 também pode vir como link na atualização
       } = req.body;
 
       let fotoPath = petAtual.foto;
 
-if (req.file) {
-  fotoPath = `/uploads/${req.file.filename}`;
-} else if (req.body.foto_url) {
-  fotoPath = req.body.foto_url;  // 👈 aceita link no update também
-}
-
+      if (req.file) {
+        fotoPath = `/uploads/${req.file.filename}`;
+      } else if (foto_url) {
+        fotoPath = foto_url;
+      }
 
       const sql = `
         UPDATE pets
