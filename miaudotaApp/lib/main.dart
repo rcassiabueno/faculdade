@@ -142,11 +142,8 @@ class PetParaAdocao {
     required this.bairro,
     required this.imagemPath,
     required this.telefoneTutor,
-    this.usuarioId, // 👈 novo
+    this.usuarioId,
   });
-
-  //String get tipo => '$especie $raca';
-  //String get cidadeEstado => '$cidade – $estado';
 }
 
 // ====================== ESTADO GLOBAL ======================
@@ -211,8 +208,11 @@ Future<void> abrirWhatsApp(
   required String numeroComDDD,
   required String mensagem,
 }) async {
+  // Remove tudo que não for número
+  final numeroLimpo = numeroComDDD.replaceAll(RegExp(r'[^0-9]'), '');
+
   final uri = Uri.parse(
-    'https://wa.me/$numeroComDDD?text=${Uri.encodeComponent(mensagem)}',
+    'https://wa.me/$numeroLimpo?text=${Uri.encodeComponent(mensagem)}',
   );
 
   if (await canLaunchUrl(uri)) {

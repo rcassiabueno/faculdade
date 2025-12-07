@@ -1,59 +1,15 @@
 // src/controllers/pets.controller.js
 import { db } from '../database/database.js';
 
-// Pets padrão para fallback (Render / problemas de banco)
-const defaultPets = [
-  {
-    id: 1,
-    nome: "Tom",
-    especie: "Gato",
-    raca: "SDR",
-    idade: "40 dias",
-    descricao:
-      "Super brincalhão, curioso e adora explorar cada cantinho. Está em busca de uma família carinhosa e responsável para dar muito amor e atenção!",
-    cidade: "Itajaí",
-    estado: "SC",
-    bairro: "Itaipava",
-    // deixamos foto = null para o app usar o asset 'assets/images/tom.png'
-    foto: null,
-    telefoneTutor: "47999157777",
-    usuario_id: null,
-  },
-  {
-    id: 2,
-    nome: "Jane",
-    especie: "Cachorro",
-    raca: "SDR",
-    idade: "1 ano",
-    descricao:
-      "Ela é a definição de companheira leal, sempre pronta para uma aventura, seja uma longa caminhada no parque ou uma sessão de brincadeiras no quintal.",
-    cidade: "Itajaí",
-    estado: "SC",
-    bairro: "Itaipava",
-    foto: null,
-    telefoneTutor: "47999157777",
-    usuario_id: null,
-  },
-];
-
 // LISTAR PETS
 export async function index(req, res) {
   db.all("SELECT * FROM pets", [], (err, rows) => {
     if (err) {
-      console.error(
-        "Erro ao listar pets no banco, usando lista padrão:",
-        err.message
-      );
-      // fallback: manda Tom e Jane mesmo com erro
-      return res.json(defaultPets);
+      console.error("Erro ao listar pets:", err.message);
+      return res.status(500).json({ error: "Erro ao listar pets" });
     }
 
-    if (!rows || rows.length === 0) {
-      console.log("Nenhum pet no banco. Enviando pets padrão (Tom e Jane).");
-      return res.json(defaultPets);
-    }
-
-    return res.json(rows);
+    return res.json(rows || []);
   });
 }
 
@@ -72,7 +28,7 @@ export async function store(req, res) {
       bairro,
       telefoneTutor,
       usuario_id,
-      foto_url, // 👈 pode vir do Flutter como link
+      foto_url,
     } = req.body;
 
     // PRIORIDADE:
@@ -110,7 +66,7 @@ export async function store(req, res) {
       fotoPath,
     ];
 
-    console.log('DEBUG /pets - params:', params); // 👈 log pra ver o que está indo pro banco
+    console.log('DEBUG /pets - params:', params); 
 
     db.run(sql, params, function (err) {
       if (err) {
@@ -169,7 +125,7 @@ export async function update(req, res) {
         estado,
         bairro,
         telefoneTutor,
-        foto_url, // 👈 também pode vir como link na atualização
+        foto_url, 
       } = req.body;
 
       let fotoPath = petAtual.foto;

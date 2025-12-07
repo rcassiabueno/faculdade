@@ -55,7 +55,7 @@ class PetService {
     required String bairro,
     required String telefoneTutor,
     File? fotoFile,
-    String? fotoUrl, // 👈 NOVO
+    String? fotoUrl,
     int? usuarioId,
   }) async {
     final token = await AuthService.getToken();

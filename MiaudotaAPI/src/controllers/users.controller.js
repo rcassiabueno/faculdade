@@ -158,7 +158,6 @@ export const login = (req, res) => {
     return res.json({
       message: "Login bem-sucedido",
       usuario: usuarioResposta,
-      // token: '...' se um dia você usar JWT
     });
   });
 };
@@ -349,8 +348,6 @@ export const updateProfile = (req, res) => {
 
   // POST /users/reset-password/by-cpf
   export const resetPasswordByCpf = (req, res) => {
-    // Only allow this endpoint in non-production environments. In production,
-    // prefer secure password reset via email with tokens.
     if ((process.env.NODE_ENV || 'development') === 'production') {
       return res.status(403).json({ error: 'Endpoint disabled in production' });
     }
@@ -360,11 +357,6 @@ export const updateProfile = (req, res) => {
       return res.status(400).json({ error: 'email, cpf e novaSenha são obrigatórios' });
     }
 
-    // normalizar CPF
-    // NOTE: This endpoint allows resetting a user's password by POSTing the
-    // email + CPF + novaSenha. This is insecure for production (anyone knowing
-    // the user's email and CPF could reset the password). Use only for dev or
-    // add extra identity checks (SMS, 2FA) in production.
     const cpfDigits = cpf.replace(/\D/g, '');
 
     const sql = `

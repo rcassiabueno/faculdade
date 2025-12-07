@@ -76,7 +76,6 @@ class _HomePageState extends State<HomePage> {
               ? '${PetService.baseUrl}${map['foto']}'
               : 'assets/images/tom.png',
           telefoneTutor: map['telefoneTutor'] ?? '',
-          // 👇 aqui também converte
           usuarioId: _parseUsuarioId(map['usuario_id']),
         );
       }).toList();
@@ -120,21 +119,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _verificarSolicitacoesPendentes() {
-    // dono do pet = telefone salvo no perfil
+    // Tutor do pet = telefone salvo no perfil
     final profile = AppState.userProfile;
     final meuTelefone = profile.telefone.trim();
 
     if (meuTelefone.isEmpty) {
-      return; // sem telefone no perfil, não tem como saber quem é tutor
+      return;
     }
 
     // só as solicitações dos meus pets
     final minhasSolicitacoes = AppState.solicitacoesPendentes
-        .where(
-          (s) =>
-              s.pet.telefoneTutor.trim() == meuTelefone &&
-              !s.aprovado, // ainda não tratadas
-        )
+        .where((s) => s.pet.telefoneTutor.trim() == meuTelefone && !s.aprovado)
         .toList();
 
     if (minhasSolicitacoes.isEmpty) return;

@@ -88,7 +88,6 @@ class _PetFormPageState extends State<PetFormPage> {
     super.dispose();
   }
 
-  // mesma ideia dos outros campos: label cinza; laranja só focado
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -153,7 +152,6 @@ class _PetFormPageState extends State<PetFormPage> {
       Map<String, dynamic> petJson;
 
       if (isEdit && widget.pet?.id != null) {
-        // 🔁 ATUALIZAR (vou deixar igual por enquanto, usando só fotoFile)
         petJson = await PetService.updatePet(
           id: widget.pet!.id!,
           nome: _nomeController.text.trim(),
@@ -169,10 +167,8 @@ class _PetFormPageState extends State<PetFormPage> {
               ? File(_imagemSelecionada!.path)
               : null,
         );
-
-        // ... (resto igual)
       } else {
-        // ✨ CRIAR
+        // CRIAR
         petJson = await PetService.createPet(
           nome: _nomeController.text.trim(),
           especie: _especieController.text.trim(),
@@ -186,7 +182,7 @@ class _PetFormPageState extends State<PetFormPage> {
           fotoFile: (!isLink && _imagemSelecionada != null)
               ? File(_imagemSelecionada!.path)
               : null,
-          fotoUrl: isLink ? imagemPath : null, // 👈 NOVO
+          fotoUrl: isLink ? imagemPath : null,
           usuarioId: userId,
         );
 
@@ -305,7 +301,7 @@ class _PetFormPageState extends State<PetFormPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // ⬇️ NOVO: campo para link da foto
+                        // NOVO: campo para link da foto
                         TextFormField(
                           controller: _imagemController,
                           keyboardType: TextInputType.url,
