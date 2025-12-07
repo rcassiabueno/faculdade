@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
+import { db } from "../database/database.js";           // 👈 ADICIONE ISTO
 import { index, store, update } from "../controllers/pets.controller.js";
 
 const router = Router();
@@ -11,19 +12,12 @@ const router = Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ======================================================
-// 🟧 Apenas uma declaração de uploadDir
-// ======================================================
 const uploadDir = path.resolve(__dirname, "..", "uploads");
 
-// 🟧 Garante que a pasta existe
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ======================================================
-// 🟧 Configuração do Multer (uma única vez!)
-// ======================================================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -35,17 +29,22 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ======================================================
-// 🟧 Rotas
-// ======================================================
-
-// GET /pets
+// Rotas principais
 router.get("/", index);
-
-// POST /pets
 router.post("/", upload.single("foto"), store);
-
-// PUT /pets/:id
 router.put("/:id", upload.single("foto"), update);
+
+// ===================================================
+// 🔥 ROTA TEMPORÁRIA — REMOVER TOM E JANE
+// ===================================================
+router.delete("/delete-seed", (req, res) => {
+  db.run("DELETE FROM pets WHERE nome IN ('Tom', 'Jane')", [], (err) => {
+    if (err) {
+      console.error("Erro ao remover seed:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    return res.json({ message: "Tom e Jane removidos!" });
+  });
+});
 
 export default router;
