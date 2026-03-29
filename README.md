@@ -59,7 +59,7 @@ O APK do aplicativo foi gerado para testes e pode ser disponibilizado conforme n
 ## 🔗 Links do projeto
 
 - 📊 Gestão do projeto (Notion): https://www.notion.so/Scrum-Projeto-Miaudota-d2a29e98d32482ea866f81e99bd8fae8?source=copy_link
-- 🎥 Vídeo de apresentação: [COLOCA SEU LINK AQUI]
+- 🎥 Vídeo de apresentação: Aguardando publicação (link será disponibilizado pelo grupo)
 
 ## MiaudotaAPI - Dev notes
 
