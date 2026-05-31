@@ -75,7 +75,7 @@ O aplicativo possui versão APK para validação e testes do MVP.
 
 - Gestão do projeto (Notion): https://www.notion.so/Scrum-Projeto-Miaudota-d2a29e98d32482ea866f81e99bd8fae8?source=copy_link
 - Protótipo (Figma): https://www.figma.com/proto/VIPlYagsKRyWRpMvnIjWA0/Prot%C3%B3tipo-Miaudota-?node-id=4002-826&t=a6DSj81iEi5Y9NW4-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=5%3A238
-- Vídeo de apresentação: 
+- Vídeo de apresentação: https://youtu.be/3fiZu8OYdV0
 
 ## Equipe
 Hugo Guedes Bonsanto
