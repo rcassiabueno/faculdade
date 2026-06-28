@@ -1,6 +1,3 @@
-# Projetos da Faculdade
-# faculdade
-
 # Miaudota - Aplicativo de Adoção Responsável de Animais
 
 ## Sobre o Projeto
@@ -56,31 +53,49 @@ O projeto foi desenvolvido utilizando:
 ### Backend
 1. Acesse a pasta `MiaudotaAPI`
 2. Instale as dependências:
-	npm install
+```bash
+npm install
+```
+
 3. Execute:
-   	npm start
+```bash
+npm start
+```
 
 
 ### Mobile
 1. Acesse a pasta `miaudotaApp`
-2. Execute:
-	flutter pub get
-	flutter run
+2. Instale as dependências
+
+```bash
+flutter pub get
+```
+
+3. Execute a aplicação
+
+```bash
+flutter run
+```
 
 ## Arquivo executável
 
-O aplicativo possui versão APK para validação e testes do MVP.
+O projeto inclui uma versão em APK, disponibilizada para validação e testes do MVP, permitindo a execução da aplicação em dispositivos Android.
+
 
 ## Links do projeto
 
-- Gestão do projeto (Notion): https://www.notion.so/Scrum-Projeto-Miaudota-d2a29e98d32482ea866f81e99bd8fae8?source=copy_link
-- Protótipo (Figma): https://www.figma.com/proto/VIPlYagsKRyWRpMvnIjWA0/Prot%C3%B3tipo-Miaudota-?node-id=4002-826&t=a6DSj81iEi5Y9NW4-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=5%3A238
-- Vídeo de apresentação: https://youtu.be/3fiZu8OYdV0
+- **Notion (Scrum):**
+  https://www.notion.so/Scrum-Projeto-Miaudota-d2a29e98d32482ea866f81e99bd8fae8?source=copy_link
+- **Protótipo (Figma):**
+  https://www.figma.com/proto/VIPlYagsKRyWRpMvnIjWA0/Prot%C3%B3tipo-Miaudota-?node-id=4002-826&t=a6DSj81iEi5Y9NW4-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=5%3A238
+- **Vídeo de apresentação (Youtube):**
+  https://youtu.be/3fiZu8OYdV0
+- **Seminário Virtual (Youtube):**
 
 ## Equipe
-Hugo Guedes Bonsanto
-Rita de Cássia Bueno
+- Hugo Guedes Bonsanto
+- Rita de Cássia Bueno
 
 ## Licença
 
-Projeto acadêmico desenvolvido para fins educacionais na disciplina Hands On Work X (HOW X).
+Este projeto foi desenvolvido exclusivamente para fins acadêmicos como parte da disciplina Hands On Work X (HOW X), do curso de Análise e Desenvolvimento de Sistemas.
