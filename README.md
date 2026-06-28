@@ -91,6 +91,7 @@ O projeto inclui uma versão em APK, disponibilizada para validação e testes d
 - **Vídeo de apresentação (Youtube):**
   https://youtu.be/3fiZu8OYdV0
 - **Seminário Virtual (Youtube):**
+  https://youtu.be/Ma8UIR3ibTI?si=wNMKjjkI9O6XWlEI
 
 ## Equipe
 - Hugo Guedes Bonsanto
